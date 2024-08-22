@@ -1,4 +1,15 @@
+---
+layout: post
+title: A roadmap to learn LLMs from scratch
+date: 2024-08-19 00:10:50.000000000 +09:00
+categories: [LLM]
+tags: [LLM]
+---
+
+
+
 # <span style="color: orange;">前言</span>
+
 ## <span style="color: blue;">维度与层次</span>
 AI大模型技术雷达图从能力角度分为以下几个维度：
 - 大模型基本概念和原理
