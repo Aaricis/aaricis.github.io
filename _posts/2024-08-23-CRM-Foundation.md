@@ -1,17 +1,15 @@
-```
 ---
 title: CRM Foundation
 date: 2024-08-23 14:40:00 +/-8
 categories: [Product, CRM]
 tags: [crm]     # TAG names should always be lowercase
 ---
-```
 
 # **概述**
 
 为实现“统一技术栈、安全、高效上云&用云”，为应用现代化使能，Meta系列产品统一构建SaaS Foundation。
 
-
+![crm_公共业务服务](D:\学习\架构设计\crm_公共业务服务.png)
 
 CRM 公共业务服务 作为 Meta SaaS Foundation 针对 CRM产品的补充，针对CRM的共性需求构建出的一组公共数据、公共能力及增值业务的服务。
 
@@ -19,7 +17,7 @@ CRM 公共业务服务 是Meta CRM所有Cloud的开发时的公共底座与运�
 
 如下图所示：有颜色的块为CRM 公共业务服务
 
-
+![](D:\学习\架构设计\crm门户.png)
 
 **客户端**
 
