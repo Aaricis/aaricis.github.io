@@ -7,7 +7,7 @@ tags: [restful api]     # TAG names should always be lowercase
 
 #  Restful风格
 
-https://webkul.com/blog/cs-cart-rest-api/
+![RESTFUL API](../assets/images/rest2.webp)
 
 ## REST 成熟度模型
 
@@ -104,4 +104,4 @@ GET,POST,PUT,DELETE,PATCH
 
 **四、REST API 设计思维导图**
 
-https://architect.pub/book/export/html/1641
+![REST API思维导图](../assets/images/REST API Design.png)
