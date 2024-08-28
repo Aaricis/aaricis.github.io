@@ -1,4 +1,6 @@
-# Be Bold !!! ✨
+# *Stay Hungry，Stay Foolish*！！！
+
+# Be Bold ！！！ ✨
 
 Here is **Kaige Zhang (Edith, 张凯歌)**. This is my personal web repo. 
 

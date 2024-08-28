@@ -16,7 +16,7 @@ timezone:
 
 title: Kaige Zhang # the main title
 
-tagline: Welcome to my personal blog # it will display as the sub-title
+tagline: Stay Hungry，Stay Foolish # it will display as the sub-title
 
 description: >- # used by seo meta and the atom feed
   A minimal, responsive and feature-rich Jekyll theme for technical writing.
