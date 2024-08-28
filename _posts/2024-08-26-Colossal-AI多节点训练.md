@@ -74,11 +74,11 @@ colossalai run --nproc_per_node 1 train.py -c ./ckpt-fp32
 
 90.91.33.64节点名称：node64
 
-![](..\assets\images\colossal-ai\01bfd06d-de5f-468f-859b-382b8936994b.png)
+![](../assets/images/colossal-ai/01bfd06d-de5f-468f-859b-382b8936994b.png)
 
 90.91.33.65节点名称：node65
 
-![image](..\assets\images\colossal-ai\dd8b94bd-4c74-484b-bfdf-1500aeec94af.png)
+![image](../assets/images/colossal-ai/dd8b94bd-4c74-484b-bfdf-1500aeec94af.png)
 
 **设置节点间SSH免密登录**
 
@@ -113,7 +113,7 @@ torchrun --nproc_per_node=1 --nnodes=2 --node_rank=0 --master_addr="90.91.33.64"
 torchrun --nproc_per_node=1 --nnodes=2 --node_rank=1 --master_addr="90.91.33.64" --master_port=29500 train.py -c ./ckpt-fp32
 ```
 
-![image](..\assets\images\colossal-ai\1a0072ed-46de-4d7c-b9c6-586e82d3c57d.png)
+![image](../assets/images/colossal-ai/1a0072ed-46de-4d7c-b9c6-586e82d3c57d.png)
 
 Colossal-AI命令行工具启动：
 
@@ -147,7 +147,7 @@ kill -9 xxx
 
 ### 2. torchrun: command not found
 
-![image](..\assets\images\colossal-ai\325a523f-bd29-4293-adfa-19a4b150a967.png)
+![image](../assets/images/colossal-ai/325a523f-bd29-4293-adfa-19a4b150a967.png)
 
 运行Colossal-AI命令，*torchrun找不到命令。*
 
@@ -176,11 +176,11 @@ colossalai.launch_from_torch(
 
 node64
 
-![image](..\assets\images\colossal-ai\440f3108-b60c-4710-b892-9e8ab822651c.png)
+![image](../assets/images/colossal-ai/440f3108-b60c-4710-b892-9e8ab822651c.png)
 
 node65
 
-![image](..\assets\images\colossal-ai\f51a17a6-2ff5-4c0a-8575-107532c29176.png)
+![image](../assets/images/colossal-ai/f51a17a6-2ff5-4c0a-8575-107532c29176.png)
 
 node65输出NCCL错误，有用信息太少，我们把NCCL的debug信息打印出来看看。设置如下的NCCL变量来打印更多的log：
 
@@ -200,25 +200,25 @@ export NCCL_IB_DISABLE=1
 输出log:
 
 node64
-![image](..\assets\images\colossal-ai\8ac6ae8e-02c2-4b1e-8166-80e773774d5a.png)
+![image](../assets/images/colossal-ai/8ac6ae8e-02c2-4b1e-8166-80e773774d5a.png)
 
 node65
-![image](..\assets\images\colossal-ai\c20047d6-c426-4a1b-bc6c-13fa2ec016ca.png)
+![image](../assets/images/colossal-ai/c20047d6-c426-4a1b-bc6c-13fa2ec016ca.png)
 
 发现问题，node65访问`10.12.5.64 `timeout。
-![image](..\assets\images\colossal-ai\1cae482b-a1cd-4656-97fd-0c272c8b2b01.png)
+![image](../assets/images/colossal-ai/1cae482b-a1cd-4656-97fd-0c272c8b2b01.png)
 
 在`90.91.33.65`尝试ping`10.12.5.64 `，一直卡住，不会打印第二条信息的情况，也没有响应
-![image](..\assets\images\colossal-ai\d2efde66-9f69-42dc-bc75-c2c529550fa0.png)
+![image](../assets/images/colossal-ai/d2efde66-9f69-42dc-bc75-c2c529550fa0.png)
 
 `ifconfig`查询`90.91.33.64`的网卡信息，发现`10.12.5.64 `是`90.91.33.64`的一张网卡，这张卡ping不通。
-![image](..\assets\images\colossal-ai\d9d6ff3d-1726-491f-ba9c-1910ed3ac300.png)
+![image](../assets/images/colossal-ai/d9d6ff3d-1726-491f-ba9c-1910ed3ac300.png)
 
 由于90.91.33.64和90.91.33.65互相可以ping通，因此我们`ifconfig`查询两个节点的网卡信息，寻找90.91.33.64和90.91.33.65的网络接口。
 
-![image](..\assets\images\colossal-ai\a2752023-7a3b-4a76-b33f-55cac6a533ee.png)
+![image](../assets/images/colossal-ai/a2752023-7a3b-4a76-b33f-55cac6a533ee.png)
 
-![image](..\assets\images\colossal-ai\1e283eec-7619-4f08-bb9d-6b9b6a3d29eb.png)
+![image](../assets/images/colossal-ai/1e283eec-7619-4f08-bb9d-6b9b6a3d29eb.png)
 
 由于网络接口不能被自动发现，手工设置NCCL_SOCKET_IFNAME环境变量。
 
@@ -227,5 +227,4 @@ export NCCL_SOCKET_IFNAME=enp99s0
 ```
 
 尝试分别运行torchrun命令，发现90.91.33.64和90.91.33.65节点可以连通。
-
 
