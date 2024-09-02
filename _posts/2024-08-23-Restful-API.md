@@ -105,3 +105,47 @@ GET,POST,PUT,DELETE,PATCH
 **四、REST API 设计思维导图**
 
 ![REST API思维导图](../assets/images/REST API Design.png)
+
+
+
+# 参考：
+
+成熟度模型
+
+https://martinfowler.com/articles/richardsonMaturityModel.html
+
+ 谷歌API设计指南：
+
+https://cloud.google.com/apis/design/resources?hl=zh-cn
+
+ 微软API设计指南：
+
+https://learn.microsoft.com/zh-cn/azure/architecture/best-practices/api-design
+
+ Salesforce API设计：
+
+https://developer.salesforce.com/docs/atlas.en-us.api_rest.meta/api_rest/intro_rest_resources.htm
+
+ GITHUB 示例：
+
+https://docs.github.com/en/rest?apiVersion=2022-11-28
+
+ RESTAPI 示例：
+
+https://restfulapi.net/rest-api-design-tutorial-with-example/
+
+ 周博凤凰架构的REST 风格 
+
+http://icyfenix.cn/architect-perspective/general-architecture/api-style/rest.html
+
+ 阮一峰的RESTAPI设计指南
+
+https://www.ruanyifeng.com/blog/2014/05/restful_api.html
+
+ HTTP协议参考：
+
+https://www.rfc-editor.org/rfc/rfc2616
+
+博客
+
+https://www.cnblogs.com/moonz-wu/p/4211626.html
