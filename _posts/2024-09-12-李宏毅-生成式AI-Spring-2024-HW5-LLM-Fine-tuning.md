@@ -152,3 +152,124 @@ generation_config = GenerationConfig(
 )
 ```
 
+## LLM 和 tokenizer 使用示例
+
+下面的代码使用instruction和poem组成一个prompt:
+
+```python
+instruction = '以下是一首唐詩的第一句話，請用你的知識判斷並完成整首詩。'
+poem = '相見時難別亦難，東風無力百花殘。'
+
+prompt = f"""\
+[INST] <<SYS>>
+You are a helpful assistant and good at writing Tang poem. 你是一個樂於助人的助手且擅長寫唐詩。
+<</SYS>>
+
+{instruction}
+{poem}
+[/INST]"""
+print(prompt)
+```
+
+![](../assets/images/Hung-yi_Lee/hw5-7.png)
+
+使用tokenizer对prompt做分词，得到分词后各个token的token_id:
+
+## generate_training_data函数
+
+`generate_training_data()`输入`data_point`(instruction+input+output)，输出模型可以读取的token。
+
+1. 按照固定的格式将`data_point`转化成prompt:
+
+   ```python
+   # construct full input prompt
+       prompt = f"""\
+   [INST] <<SYS>>
+   You are a helpful assistant and good at writing Tang poem. 你是一個樂於助人的助手且擅長寫唐詩。
+   <</SYS>>
+   
+   {data_point["instruction"]}
+   {data_point["input"]}
+   [/INST]"""
+   ```
+
+2. 使用`tokenizer`解析prompt，返回含"input_ids"、"labels"和"attention_mask"的dict。
+
+   ```python
+   # transform input prompt into tokens
+       full_tokens = tokenizer(
+           prompt + " " + data_point["output"] + "</s>",
+           truncation=True,
+           max_length=CUTOFF_LEN + 1,
+           padding="max_length",
+       )["input_ids"][:-1]
+       return {
+           "input_ids": full_tokens,
+           "labels": [-100] * len_user_prompt_tokens
+           + full_tokens[len_user_prompt_tokens:],
+           "attention_mask": [1] * (len(full_tokens)),
+       }
+   
+   ```
+
+## evaluate函数
+
+`evaluate()`函数输入instruction、generation_config、max_len、input，输出模型的响应。
+
+generation_config预先设置如下：
+
+```python
+# 設定模型推理時需要用到的decoding parameters
+max_len = 128
+generation_config = GenerationConfig(
+    do_sample=True,
+    temperature=0.1,
+    num_beams=1,
+    top_p=0.3,
+    no_repeat_ngram_size=3,
+    pad_token_id=2,
+)
+```
+
+`GenerationConfig` 是一个用于配置文本生成模型的类。它允许用户设置生成过程中使用的各种参数，如最大生成长度、温度、顶级采样等。
+
+## Set Hyperarameters for Fine-tuning
+
+```python
+num_train_data = 1040 # 設定用來訓練的資料數量，可設置的最大值為5000。在大部分情況下會希望訓練資料盡量越多越好，這會讓模型看過更多樣化的詩句，進而提升生成品質，但是也會增加訓練的時間
+                      # 使用預設參數(1040): fine-tuning大約需要25分鐘，完整跑完所有cell大約需要50分鐘
+                      # 使用最大值(5000): fine-tuning大約需要100分鐘，完整跑完所有cell大約需要120分鐘
+```
+
+不建议修改的参数：
+
+```python
+""" It is recommmended NOT to change codes in this cell """
+
+cache_dir = "./cache"  # 設定快取目錄路徑
+from_ckpt = False  # 是否從checkpoint載入模型的權重，預設為否
+ckpt_name = None  # 從特定checkpoint載入權重時使用的檔案名稱，預設為無
+dataset_dir = "./GenAI-Hw5/Tang_training_data.json"  # 設定資料集的目錄或檔案路徑
+logging_steps = 20  # 定義訓練過程中每隔多少步驟輸出一次訓練誌
+save_steps = 65  # 定義訓練過程中每隔多少步驟保存一次模型
+save_total_limit = 3  # 控制最多保留幾個模型checkpoint
+report_to = None  # 設定上報實驗指標的目標，預設為無
+MICRO_BATCH_SIZE = 4  # 定義微批次的大小
+BATCH_SIZE = 16  # 定義一個批次的大小
+GRADIENT_ACCUMULATION_STEPS = BATCH_SIZE // MICRO_BATCH_SIZE  # 計算每個微批次累積的梯度步數
+CUTOFF_LEN = 256  # 設定文本截斷的最大長度
+LORA_R = 8  # 設定LORA（Layer-wise Random Attention）的R值
+LORA_ALPHA = 16  # 設定LORA的Alpha值
+LORA_DROPOUT = 0.05  # 設定LORA的Dropout率
+VAL_SET_SIZE = 0  # 設定驗證集的大小，預設為無
+TARGET_MODULES = ["q_proj", "up_proj", "o_proj", "k_proj", "down_proj", "gate_proj", "v_proj"] # 設定目標模組，這些模組的權重將被保存為checkpoint
+device_map = "auto"  # 設定設備映射，預設為"auto"
+world_size = int(os.environ.get("WORLD_SIZE", 1))  # 獲取環境變數"WORLD_SIZE"的值，若未設定則預設為1
+ddp = world_size != 1  # 根據world_size判斷是否使用分散式數據處理(DDP)，若world_size為1則不使用DDP
+if ddp:
+    device_map = {"": int(os.environ.get("LOCAL_RANK") or 0)}
+    GRADIENT_ACCUMULATION_STEPS = GRADIENT_ACCUMULATION_STEPS // world_size
+```
+
+## Start Fine-tuning
+
