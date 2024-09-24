@@ -273,3 +273,28 @@ if ddp:
 
 ## Start Fine-tuning
 
+将模型准备好，并使用 INT8训练：
+
+```python
+# 將模型準備好以使用 INT8 訓練
+model = prepare_model_for_int8_training(model)
+```
+
+`prepare_model_for_int8_training`是Hugging Face的PEFT(Parameter-Efficient Fine-Tuning)库中的方法，用于准备模型进行INT8训练。INT8训练是将模型的权重转换为8位整数（INT8），以减少内存占用和加速计算，同时尽量保持模型的性能。
+
+
+
+```python
+# 使用 LoraConfig 配置 LORA 模型
+config = LoraConfig(
+    r=LORA_R,
+    lora_alpha=LORA_ALPHA,
+    target_modules=TARGET_MODULES,
+    lora_dropout=LORA_DROPOUT,
+    bias="none",
+    task_type="CAUSAL_LM",
+)
+```
+
+
+
