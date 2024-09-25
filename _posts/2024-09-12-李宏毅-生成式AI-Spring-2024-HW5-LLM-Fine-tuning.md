@@ -175,6 +175,54 @@ print(prompt)
 
 使用tokenizer对prompt做分词，得到分词后各个token的token_id:
 
+```python
+inputs = tokenizer(prompt, return_tensors="pt")
+print(inputs)
+```
+
+```
+{'input_ids': tensor([[    1,   733, 16289, 28793,  2087, 18741,  4060,    13,  1976,   460,
+           264, 10865, 13892,   304,  1179,   438,  3653,   320,   602, 16067,
+         28723, 28705, 44845, 42171, 51736, 30278, 43308, 51301, 29958, 45695,
+         32746, 59631, 28944,    13, 28789,   700, 18741,  4060,    13,    13,
+         42564, 28971, 47223, 59631, 28914, 42436, 50175, 28924, 30539, 28963,
+         42378, 42546, 43316, 31439, 42292, 29681, 29993, 34965, 28944,    13,
+         52324, 29607, 35512, 30798, 32026, 35512, 28924, 55607, 45898, 30421,
+         30064, 33504, 28944,    13, 28792, 28748, 16289, 28793,     2]]), 'attention_mask': tensor([[1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+         1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+         1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+         1, 1, 1, 1, 1, 1, 1]])}
+```
+
+输出`input_ids`和`attention_mask`组成的dict。
+
+- input_ids: size为[batch, 分此后tokens的个数]，其中每此表中的个元素是分词后的token在词表中的token_id。
+
+```python
+inputs_ids = inputs['input_ids']
+inputs_ids.size() 
+```
+
+```
+torch.Size([1, 79])
+```
+
+为了验证一下，我们将token_id还原回token，获得token_id对应的词。
+
+```python
+tokenizer.convert_ids_to_tokens([1,   733, 16289, 28793,  2087, 18741,  4060])
+```
+
+```
+['<s>', '▁[', 'INST', ']', '▁<<', 'SYS', '>>']
+```
+
+- attention_mask: size与input_ids一样，元素值为0/1，1代表这个token有用，0代表无用。
+
+  attention_mask的作用是：当batch大于1时，每一行元素的长度值是分词后字符数量最大的，比如两行text做分词，一行被分为10个token，一行被分为20个token，那么分词后的input_ids和attention_mask的size为[2, 20]，attention_mask[0]就是前10个元素为1，后10个为0。attention_mask[1]全部为1。
+
+  
+
 ## generate_training_data函数
 
 `generate_training_data()`输入`data_point`(instruction+input+output)，输出模型可以读取的token。
