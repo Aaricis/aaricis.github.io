@@ -221,7 +221,44 @@ tokenizer.convert_ids_to_tokens([1,   733, 16289, 28793,  2087, 18741,  4060])
 
   attention_mask的作用是：当batch大于1时，每一行元素的长度值是分词后字符数量最大的，比如两行text做分词，一行被分为10个token，一行被分为20个token，那么分词后的input_ids和attention_mask的size为[2, 20]，attention_mask[0]就是前10个元素为1，后10个为0。attention_mask[1]全部为1。
 
-  
+将`inputs_ids`输入LLM生成文本。
+
+```python
+# 使用模型進行生成回覆
+generation_output = model.generate(
+    input_ids=inputs_ids,
+    generation_config=generation_config,
+    return_dict_in_generate=True,
+    output_scores=True,
+    max_new_tokens=max_len,
+    )
+generation_output.sequences
+```
+
+输出为一组token_ids。
+
+```python
+tensor([[    1,   733, 16289, 28793,  2087, 18741,  4060,    13,  1976,   460,
+           264, 10865, 13892,   304,  1179,   438,  3653,   320,   602, 16067,
+         28723, 28705, 44845, 42171, 51736, 30278, 43308, 51301, 29958, 45695,
+         32746, 59631, 28944,    13, 28789,   700, 18741,  4060,    13,    13,
+         42564, 28971, 47223, 59631, 28914, 42436, 50175, 28924, 30539, 28963,
+         42378, 42546, 43316, 31439, 42292, 29681, 29993, 34965, 28944,    13,
+         52324, 29607, 35512, 30798, 32026, 35512, 28924, 55607, 45898, 30421,
+         30064, 33504, 28944,    13, 28792, 28748, 16289, 28793,     2, 28705,
+         29367, 30606, 29607, 35512, 29062, 32026, 35512, 30798, 28924, 55607,
+         32329, 33089, 30421, 30064, 33485, 33504, 33504, 28944,     2]])
+```
+
+把输出的token_ids交给tokenizer做decode解码，可以看到输出一段文字。
+
+```python
+tokenizer.decode(generation_output.sequences[0])
+```
+
+```
+<s> [INST] <<SYS>>\nYou are a helpful assistant and good at writing Tang poem. 你是一個樂於助人的助手且擅長寫唐詩。\n<</SYS>>\n\n以下是一首唐詩的第一句話，請用你的知識判斷並完成整首詩。\n相見時難別亦難，東風無力百花殘。\n[/INST]</s> 相望時難分亦難別，東風吹拂百花欲殘殘。</s>
+```
 
 ## generate_training_data函数
 
@@ -330,8 +367,6 @@ model = prepare_model_for_int8_training(model)
 
 `prepare_model_for_int8_training`是Hugging Face的PEFT(Parameter-Efficient Fine-Tuning)库中的方法，用于准备模型进行INT8训练。INT8训练是将模型的权重转换为8位整数（INT8），以减少内存占用和加速计算，同时尽量保持模型的性能。
 
-
-
 ```python
 # 使用 LoraConfig 配置 LORA 模型
 config = LoraConfig(
@@ -342,6 +377,17 @@ config = LoraConfig(
     bias="none",
     task_type="CAUSAL_LM",
 )
+```
+
+从原始数据集中加载训练数据，将num_train_data = 1040笔数据写入`tmp_dataset.json`文件。然后使用
+
+```python
+# 載入並處理訓練數據
+with open(dataset_dir, "r", encoding = "utf-8") as f:
+    data_json = json.load(f)
+with open("tmp_dataset.json", "w", encoding = "utf-8") as f:
+    json.dump(data_json[:num_train_data], f, indent = 2, ensure_ascii = False)
+data = load_dataset('json', data_files="tmp_dataset.json", download_mode="force_redownload")
 ```
 
 
