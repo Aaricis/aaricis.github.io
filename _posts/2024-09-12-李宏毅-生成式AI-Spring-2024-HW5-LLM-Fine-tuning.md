@@ -390,5 +390,80 @@ with open("tmp_dataset.json", "w", encoding = "utf-8") as f:
 data = load_dataset('json', data_files="tmp_dataset.json", download_mode="force_redownload")
 ```
 
+数据被分为训练集和验证集。`VAL_SET_SIZE`预设为0，表示没有验证集数据。
 
+```python
+# 將訓練數據分為訓練集和驗證集（若 VAL_SET_SIZE 大於 0）
+if VAL_SET_SIZE > 0:
+    train_val = data["train"].train_test_split(
+        test_size=VAL_SET_SIZE, shuffle=True, seed=42
+    )
+    train_data = train_val["train"].shuffle().map(generate_training_data)
+    val_data = train_val["test"].shuffle().map(generate_training_data)
+else:
+    train_data = data['train'].shuffle().map(generate_training_data)
+    val_data = None
+```
+
+使用Transformer的Trainer训练模型
+
+```python
+# 使用 Transformers Trainer 進行模型訓練
+trainer = transformers.Trainer(
+    model=model,
+    train_dataset=train_data,
+    eval_dataset=val_data,
+    args=transformers.TrainingArguments(
+        per_device_train_batch_size=MICRO_BATCH_SIZE,
+        gradient_accumulation_steps=GRADIENT_ACCUMULATION_STEPS,
+        warmup_steps=50,
+        num_train_epochs=num_epoch,
+        learning_rate=LEARNING_RATE,
+        fp16=True,  # 使用混合精度訓練
+        logging_steps=logging_steps,
+        save_strategy="steps",
+        save_steps=save_steps,
+        output_dir=ckpt_dir,
+        save_total_limit=save_total_limit,
+        ddp_find_unused_parameters=False if ddp else None,  # 是否使用 DDP，控制梯度更新策略
+        report_to=report_to,
+    ),
+    data_collator=transformers.DataCollatorForLanguageModeling(tokenizer, mlm=False),
+)
+
+......
+
+# 開始模型訓練
+trainer.train()
+```
+
+可以看到使用默认配置训练的结果，loss逐渐降低。
+
+```python
+{'loss': 3.3137, 'grad_norm': 2.415785551071167, 'learning_rate': 0.00011399999999999999, 'epoch': 0.31}
+{'loss': 2.0632, 'grad_norm': 2.1237754821777344, 'learning_rate': 0.000234, 'epoch': 0.62}
+{'loss': 1.9832, 'grad_norm': 1.4616379737854004, 'learning_rate': 0.00011999999999999999, 'epoch': 0.92}
+```
+
+## Testing
+
+测试训练好的模型看看效果。
+
+### 加载checkpoints
+
+```python
+# find all available checkpoints
+ckpts = []
+for ckpt in os.listdir(ckpt_dir):
+    if (ckpt.startswith("checkpoint-")):
+        ckpts.append(ckpt)
+
+# list all the checkpoints
+ckpts = sorted(ckpts, key = lambda ckpt: int(ckpt.split("-")[-1]))
+print("all available checkpoints:")
+print(" id: checkpoint name")
+for (i, ckpt) in enumerate(ckpts):
+    print(f"{i:>3}: {ckpt}")
+
+```
 
