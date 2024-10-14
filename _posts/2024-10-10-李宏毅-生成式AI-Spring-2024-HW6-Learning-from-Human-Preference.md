@@ -27,15 +27,36 @@ RLHF是LLM训练的第三阶段，目的是使LLM输出满足人类偏好的回�
 
 RLHF涉及到多模型训练过程和不同的部署阶段，训练过程可被分解为三个核心步骤：
 
-1. 预训练语言模型(LM);
-2. 收集数据，训练奖励模型（Reward model）;
-3. 用强化学习对LM进行微调;
+![Media: Methods > Media Item > Light mode](https://images.ctfassets.net/kftzwdyauwt9/12CHOYcRkqSuwzxRp46fZD/928a06fd1dae351a8edcf6c82fbda72e/Methods_Diagram_light_mode.jpg?w=3840&q=90&fm=webp)
 
-## 预训练语言模型
+1. 使用监督学习微调语言模型(LM)；
+2. 收集比较数据，训练奖励模型(Reward model)；
+3. 使用强化学习算法对监督策略进行微调以优化该奖励；
 
-使用联发科的Breeze-7b模型作为预训练的LM。
+## Step1：预训练语言模型
+
+本作业直接使用联发科的Breeze-7b模型作为预训练的LM。
 
 **Breeze-7B** 是联发科（MediaTek）旗下研究机构开发的一款**大语言模型（LLM）**，专为处理英文和繁体中文的任务而优化。它拥有 **70亿参数**，并在繁体中文的多个基准测试中表现出色，尤其在与 **GPT-3.5** 等强大模型的对比中展现了较高的竞争力。
 
-## 训练奖励模型
+## Step2：训练奖励模型
 
+***为什么需要奖励模型？***
+
+*评价LM输出答案是否满足人类的偏好，需要人类提供回馈。由于人类的时间精力优先，我们使用RM来模仿人类的行为。*
+
+- 收集比较数据；
+- 给定一个问题，会有多个回答，人类会对这些回答进行排序；
+- 奖励模型学习哪种反应更好（更类似于人类偏好）；
+
+本次作业使用DPO(Direct Preference Optimization)对齐LLM。
+
+RLHF需要额外训练奖励模型，并且强化学习训练非常不稳定，超参数难以调整。DPO通过loss function直接从偏好数据优化LLM。
+
+![](../assets/images/Hung-yi_Lee/hw6-4.PNG)
+
+
+
+# 参考
+
+[Instruct GPT](https://arxiv.org/abs/2203.02155)
