@@ -500,8 +500,8 @@ dpo_trainer.train()
 
 固定其他参数，改变`support_ratio`，观察模型的立场。
 
+- a. num_epoch = 3  data_size = 50  **support_ratio = 0**
 ```json
-# a. num_epoch = 3  data_size = 50  **support_ratio = 0**
 [
     {
         "id": 1,
@@ -566,8 +566,8 @@ dpo_trainer.train()
 ]
 ```
 
+- b. num_epoch = 3  data_size = 50  **support_ratio = 1**
 ```json
-# b. num_epoch = 3  data_size = 50  **support_ratio = 1**
 [
     {
         "id": 1,
@@ -644,8 +644,8 @@ dpo_trainer.train()
 
 固定其他参数，改变`num_epoch`，观察模型的立场。  
 
+- **num_epoch = 1**   data_size = 50  support_ratio = 1
 ```json
-# **num_epoch = 1**   data_size = 50  support_ratio = 1
 [
     {
         "id": 1,
@@ -710,8 +710,8 @@ dpo_trainer.train()
 ]
 ```
 
+- **num_epoch = 3**  data_size = 50  support_ratio = 1
 ```json
-# **num_epoch = 3**  data_size = 50  support_ratio = 1
 [
     {
         "id": 1,
@@ -788,8 +788,9 @@ dpo_trainer.train()
 
 固定其他参数，改变`data_size`，观察模型的立场。  
 
+- num_epoch = 3  **data_size = 10**   support_ratio = 1
+
 ```json
-# num_epoch = 3  **data_size = 10**   support_ratio = 1
 [
     {
         "id": 1,
@@ -854,8 +855,9 @@ dpo_trainer.train()
 ]
 ```
 
+- num_epoch = 3  **data_size = 50**   support_ratio = 1
+
 ```json
-# num_epoch = 3  **data_size = 50**   support_ratio = 1
 [
     {
         "id": 1,
@@ -921,6 +923,10 @@ dpo_trainer.train()
 ```
 
 相比`data_size = 10`,`data_size = 50`模型的输出更加简短，立场更坚定。
+
+# 总结
+
+使用RLHF微调模型，可以使模型输出符合人类偏好的回答。
 
 # 参考
 
