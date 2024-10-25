@@ -83,9 +83,11 @@ Explainable侧重以可理解的术语描述AI系统如何做出特定决策或�
 
 ![](../assets/images/Hung-yi_Lee/hw7-8.PNG)
 
-### Sentence Completion Task
+### Sentence Completion Task(5~7)
 
+![](../assets/images/Hung-yi_Lee/hw7-9.PNG)
 
+![](../assets/images/Hung-yi_Lee/hw7-10.png)
 
 # Reference
 
