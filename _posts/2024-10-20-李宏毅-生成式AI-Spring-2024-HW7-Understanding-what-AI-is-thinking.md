@@ -71,7 +71,7 @@ Explainable侧重以可理解的术语描述AI系统如何做出特定决策或�
 
 ![](../assets/images/Hung-yi_Lee/hw7-4.PNG)
 
-### Machine Translation Task
+### Machine Translation Task(3~4)
 
 运行'Machine Translation Task'代码，获得Saliency Map，然后回答问题3~4。
 
@@ -85,9 +85,25 @@ Explainable侧重以可理解的术语描述AI系统如何做出特定决策或�
 
 ### Sentence Completion Task(5~7)
 
+运行'Sentence Completion Task'代码，获得Saliency Map，然后回答问题5~7题。
+
 ![](../assets/images/Hung-yi_Lee/hw7-9.PNG)
 
 ![](../assets/images/Hung-yi_Lee/hw7-10.png)
+
+![](../assets/images/Hung-yi_Lee/hw7-11.PNG)
+
+当生成'Washington'时'George'的importance score最大。
+
+![](../assets/images/Hung-yi_Lee/hw7-12.PNG)
+
+gradient-based方法的原理：计算模型输出（logit）的变化相对于输入（input tensor）的变化。
+
+![](../assets/images/Hung-yi_Lee/hw7-13.PNG)
+
+attention based方法的原理：计算注意力权重，衡量输入标记（tokens）在生成输出时的重要性或相关性。
+
+
 
 # Reference
 
