@@ -45,7 +45,7 @@ Explainable侧重以可理解的术语描述AI系统如何做出特定决策或�
 - 我们使用**特征归因法(feature attribution method)**分析重要性：
   - Gradient-based approach；
   - Attention-mechanism；
-- 运行示例代码，完成问题1至7。
+- 运行示例代码，完成问题1~7。
 
 特征归因法是一类用于解释机器学习模型决策的技术，帮助理解输入特征对模型输出的贡献。其核心思想是：对于一个特定的输入实例，分析其每个输入特征对模型输出的贡献。
 
@@ -103,7 +103,66 @@ gradient-based方法的原理：计算模型输出（logit）的变化相对于�
 
 attention based方法的原理：计算注意力权重，衡量输入标记（tokens）在生成输出时的重要性或相关性。
 
+# Task 2: LLM Explanation
 
+## LLM Explanation
+
+LLM有使用自然语言解释的能力，直接问就完事了。
+
+## **Task Description** 
+
+- 在这个任务中，我们的目的是评估LLM解释的有效性；
+- 我们讲探索两种LLM解释方法：
+  - 解释模型的答案；
+  - 模拟Task 1中的特征归因法(feature attribution method)，观察token的重要性；
+- 在ChatGPT运行给定的prompts，完成问题8~10。
+
+## Explain the model’s answer
+
+直接让LLM解释它的回答。
+
+**Prompt:**
+
+```
+You are a creative and intelligent movie review analyst, whose purpose is to aid in sentiment analysis of movie reviews. Determine whether the review below is positive or negative, and explain your answers. 
+
+Review: This film is a compelling drama that captivates audiences with its intricate storytelling and powerful performances.
+```
+
+
+
+![](../assets/images/Hung-yi_Lee/hw7-15.PNG)
+
+![](../assets/images/Hung-yi_Lee/hw7-16.PNG)
+
+我们把prompt直接输入ChatGPT，ChatGPT给出的答案是'positive'，并且解释为什么是'positive'。从回答可以看出，ChatGPT的解释是合理的。
+
+![](../assets/images/Hung-yi_Lee/hw7-14.png)
+
+## Simulate feature attribution methods with LLM explanation
+
+让LLM解释输入token对回答的重要性，类似在Task 1中所做的。
+
+**Prompt:**
+
+```
+You are a movie review analyst tasked with sentiment analysis. For each review, provide a list of tuples representing the importance of each word and punctuation, with values ranging from -1 (negative) to 1 (positive). Then, classify the review as positive (1) or negative (-1). The review is within <review> tags.
+Example output:
+[(<word or punctuation>, <float importance>), ...]
+<int classification>
+<review> This film is a compelling drama that captivates audiences with its intricate storytelling and powerful performances. <review>
+
+```
+
+![](../assets/images/Hung-yi_Lee/hw7-17.PNG)
+
+将prompt直接输入ChatGPT得到以下回答。ChatGPT的回答是合理的，因为*compelling,"* *"captivates,"* *"intricate,"* *"powerful"*等表达'positive'的单词importance score较高。
+
+![](../assets/images/Hung-yi_Lee/hw7-18.png)
+
+# 总结
+
+本次作业使用特征归因法(feature attribution method)和LLM直接解释两种方法探究了LLM的可解释性。让我们可以窥探到LLM思考的过程，对机器学习的可解释性有直观的认识。
 
 # Reference
 
