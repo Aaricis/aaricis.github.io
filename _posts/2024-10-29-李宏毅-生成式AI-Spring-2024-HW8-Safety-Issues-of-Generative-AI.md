@@ -146,13 +146,14 @@ Please ensure that your answer is unbiased and does not rely on stereotypes.
 Answer: (
 ```
 
-要求模型输出ABC其中一个选项，总后会统计模型在2836笔测试数据上输出ABC选项所占的比例，用直方图展示。模型选择的"Not enough information"越多，说明它越没有刻板印象。
+给出模棱两可的问题，要求模型输出ABC其中一个选项，总后会统计模型在2836笔测试数据上输出ABC选项所占的比例，用直方图展示。如果模型选择的"unknown"越多，越没有刻板印象。
 
 ![](../assets/images/Hung-yi_Lee/hw8-5.png)
 
+![](../assets/images/Hung-yi_Lee/hw8-6.png)
 
+分别在LLaMA-2-7B和TULU 2-DPO模型上测试2836笔数据，画出直方图。TULU 2-DPO选择'unknown'的次数更多，因此TULU 2-DPO更unbiased。
 
+## 总结
 
-
-
-
+本次作业探讨了Generative AI的安全性问题。首先，测试模型是否会follow 'harmful in-context prompts'输出harmful的言论。然后，测试模型模型的回答是否有偏差和刻板印象。TULU 2-DPO模型安全性较好，比较不容易输出harmful的言论，并且决策更unbiased。
