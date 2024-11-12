@@ -17,11 +17,13 @@ Text-to-Image Model可以生成与文本描述相匹配的图像。ChatGPT-4O具
 
 ### Personalization
 
-公共基础模型不能满足个性化的要求，例如ChatGPT-4O每次输出的人脸都不一样。想要模型每次输出特定的人物形象，例如每次都生成Brad Pitt的脸，需要对模型进行微调。
+基础模型不能满足个性化的要求，例如ChatGPT-4O每次输出的人脸都不一样。想要模型每次输出特定的人物形象，例如每次都生成Brad Pitt的脸，需要对模型进行微调。
 
 ![](../assets/images/Hung-yi_Lee/hw10-3.png)
 
-### Achieve Personalization Using LoRA
+## Achieve Personalization Using LoRA
+
+###  LoRA
 
 使用LoRA（Low-Rank Adaptation）对基础模型进行微调。LoRA是微软在2021年推出的微调方法，它冻结预训练的模型权重，将可训练的秩分解矩阵注入到Transformer架构的每一层，从而大大减少下游任务的可训练参数量。多数情况下，LoRA的性能可与完全微调的模型相媲美，并且不会引入额外的推理时延。
 
@@ -29,4 +31,41 @@ Text-to-Image Model可以生成与文本描述相匹配的图像。ChatGPT-4O具
 
 ![](../assets/images/Hung-yi_Lee/hw10-4.png)
 
-在训练期间，LoRA在原本的矩阵$W\in R^{d\times k}$旁边插入一个并行的权重矩阵$\Delta W \in R^{d \times k}$。因为模型的低秩性，$\Delta W$可被拆分为矩阵$B\in R^{d \times r}$和$A\in R^{r\times k}$，其中$r\ll min(d, k)$。
+LoRA在原本的矩阵$W\in R^{d\times k}$旁边插入一个并行的权重矩阵$\Delta W \in R^{d \times k}$。因为模型的低秩性，$\Delta W$可被拆分为矩阵$B\in R^{d \times r}$和$A\in R^{r\times k}$，其中$r\ll min(d, k)$，从而实现了极小的参数数量训练LLM。在训练期间，$W$被冻结，不会接受梯度更新，而$A$和$B$包含可训练的参数会被更新。$W$和$\Delta W$接受相同的输入$x$，训练完成后各自的输出向量按位置相加，因此不会产生额外的推理时间，如下式所示：
+$$
+h = W_0 x + \Delta W x = W_0 x + BAx 
+$$
+在训练开始的时候，对矩阵$A$进行随机高斯初始化，矩阵$B$使用零矩阵初始化。因为$r$通常是一个非常小的值（实验证明1、2、4、8的效果就非常好），所以LoRA在训练时引入的参数量是非常小的，因此它的训练非常高效，不会带来显著的显存增加。
+
+### Fine-tuning with LoRA
+
+使用LoRA微调基础模型，获得额外的personalization能力。
+
+![](../assets/images/Hung-yi_Lee/hw10-5.PNG)
+
+## Goal of This Homework
+
+使用同一个人的面部图片微调Stable Diffusion模型，使它生成面孔一致的图片。
+
+![](../assets/images/Hung-yi_Lee/hw10-6.PNG)
+
+原始的Stable Diffusion模型每次产生的图片人脸都不一样。我们使用Brad Pitt的图片和对应的文本描述微调原始模型，使它产生的图片都是Brad Pitt的脸。
+
+给定充分的训练时间，Stable Diffusion生成的图片将会拥有同一个人的脸。
+
+![](../assets/images/Hung-yi_Lee/hw10-7.PNG)
+
+## Evaluation
+
+将给定的prompt输入微调后的模型生成图片，最终的得分将会从三个方面进行评估：
+
+- 图片是否与训练数据相似？
+- 图片和文字是否匹配？
+- 图片是否包含人脸？
+
+## Task Introduction
+
+![](../assets/images/Hung-yi_Lee/hw10-8.PNG)
+
+### Step 1. Fine-tune Stable Diffusion
+
