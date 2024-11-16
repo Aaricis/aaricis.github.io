@@ -67,5 +67,94 @@ $$
 
 ![](../assets/images/Hung-yi_Lee/hw10-8.PNG)
 
-### Step 1. Fine-tune Stable Diffusion
+## Step 1. Fine-tune Stable Diffusion
 
+使用Hugging Face`stablediffusionapi/cyberrealistic-41`模型作为base model；训练数据为100张Brad Pitt的照片和对应的文本描述。如下图所示，照片和文本描述成对出现，具有相同的文件名。
+
+![](../assets/images/Hung-yi_Lee/hw10-9.png)
+
+
+
+**安装必要的库：**
+
+```python
+# Install the required packages
+os.chdir(root_dir)
+!pip -q install timm==1.0.7
+!pip -q install fairscale==0.4.13
+!pip -q install transformers==4.41.2
+!pip -q install requests==2.32.3
+!pip -q install accelerate==0.31.0
+!pip -q install diffusers==0.29.1
+!pip -q install einop==0.0.1
+!pip -q install safetensors==0.4.3
+!pip -q install voluptuous==0.15.1
+!pip -q install jax==0.4.33
+!pip -q install peft==0.11.1
+!pip -q install deepface==0.0.92
+!pip -q install tensorflow==2.17.0
+!pip -q install keras==3.2.0
+```
+
+**导入必要的包：**
+
+```python
+#@markdown ##  Import necessary packages
+#@markdown It is recommmended NOT to change codes in this cell.
+import argparse
+import logging
+import math
+import os
+import random
+import glob
+import shutil
+from pathlib import Path
+import numpy as np
+import torch
+import torch.nn.functional as F
+import torch.utils.checkpoint
+import transformers
+
+# Python Imaging Library（PIL）图像处理
+from PIL import Image
+
+# 图像处理
+from torchvision import transforms
+from torchvision.utils import save_image
+
+# 显示进度条
+from tqdm.auto import tqdm
+
+# Parameter-Efficient Fine-tuning(PEFT)库
+from peft import LoraConfig
+from peft.utils import get_peft_model_state_dict
+
+# Hugging Face transformers
+from transformers import AutoProcessor, AutoModel, CLIPTextModel, CLIPTokenizer
+
+# Hugging Face Diffusion Model库
+import diffusers
+from diffusers import AutoencoderKL, DDPMScheduler, DiffusionPipeline, StableDiffusionPipeline, UNet2DConditionModel
+from diffusers.optimization import get_scheduler
+from diffusers.utils import convert_state_dict_to_diffusers
+from diffusers.training_utils import compute_snr
+from diffusers.utils.torch_utils import is_compiled_module
+
+# 面部检测
+from deepface import DeepFace
+
+# OpenCV
+import cv2
+```
+
+
+
+Step: 200 Face Similarity Score: 1.1819632053375244 CLIP Score: 30.577381134033203 Faceless Images: 0
+
+Face Similarity Score: 1.2155983448028564 CLIP Score: 30.146756172180176 Faceless Images: 1
+
+
+
+Step: 2000 Face Similarity Score: 1.1477864980697632 CLIP Score: 30.112869262695312 Faceless Images: 0
+
+Face Similarity Score: 1.1696956157684326 CLIP Score: 29.713413848876954 Faceless Images: 0
