@@ -33,7 +33,7 @@ Text-to-Image Model可以生成与文本描述相匹配的图像。ChatGPT-4O具
 
 LoRA在原本的矩阵$W\in R^{d\times k}$旁边插入一个并行的权重矩阵$\Delta W \in R^{d \times k}$。因为模型的低秩性，$\Delta W$可被拆分为矩阵$B\in R^{d \times r}$和$A\in R^{r\times k}$，其中$r\ll min(d, k)$，从而实现了极小的参数数量训练LLM。在训练期间，$W$被冻结，不会接受梯度更新，而$A$和$B$包含可训练的参数会被更新。$W$和$\Delta W$接受相同的输入$x$，训练完成后各自的输出向量按位置相加，因此不会产生额外的推理时间，如下式所示：
 $$
-h = W_0 x + \Delta W x = W_0 x + BAx 
+h = W_0 x + \Delta W x = W_0 x + BAx
 $$
 在训练开始的时候，对矩阵$A$进行随机高斯初始化，矩阵$B$使用零矩阵初始化。因为$r$通常是一个非常小的值（实验证明1、2、4、8的效果就非常好），所以LoRA在训练时引入的参数量是非常小的，因此它的训练非常高效，不会带来显著的显存增加。
 
@@ -146,6 +146,84 @@ from deepface import DeepFace
 # OpenCV
 import cv2
 ```
+
+**参数设置**
+
+```python
+output_folder = os.path.join(project_dir, "logs") # 存放model checkpoints跟validation結果的資料夾
+seed = 1126 # random seed
+train_batch_size = 2 # training batch size
+resolution = 512 # Image size
+weight_dtype = torch.bfloat16 # 模型权重的数据类型是bfloat16
+snr_gamma = 5 # Signal-to-Noise Ratio(SNR)信噪比缩放因子
+
+## Important parameters for fine-tuning Stable Diffusion
+pretrained_model_name_or_path = "stablediffusionapi/cyberrealistic-41"
+lora_rank = 32 # r(rank)
+lora_alpha = 16 # Lora的alpha参数
+
+# 学习率
+learning_rate = 1e-4 #@param {type:"number"}
+unet_learning_rate = learning_rate
+text_encoder_learning_rate = learning_rate
+lr_scheduler_name = "cosine_with_restarts" # 使用Cosine Annealing with Restarts学习率调度方法
+lr_warmup_steps = 100 # 初始预热步数
+
+# 最大训练步数
+max_train_steps = 200 
+
+# 验证集数据
+validation_prompt = "validation_prompt.txt"
+validation_prompt_path = os.path.join(prompts_folder, validation_prompt)
+validation_prompt_num = 3 #@param {type:"slider", min:1, max:5, step:1}
+validation_step_ratio = 1 #@param {type:"slider", min:0, max:1, step:0.1}
+with open(validation_prompt_path, "r") as f:
+    validation_prompt = [line.strip() for line in f.readlines()]
+```
+
+**设置LoRA Config**
+
+> 原版代码导入了`peft`并设置了`lora_rank`和`lora_alpha`参数，但是没有真正使用LoRA作微调。出于学习的目的，笔者改造了源代码，提供一版使用LoRA微调的代码，供大家学习交流。
+
+Stable Diffusion模型包含三个组件：CLIP、U-net、VAE。参数量分布和占比为：
+[来源](https://forums.fast.ai/t/stable-diffusion-parameter-budget-allocation/101515)
+
+| 组件      | 参数量 | 文件大小  |  占比 |
+| ----------- | ----------- |----------- |----------- |
+| CLIP      | 123,060,480 |  492 MB  |  12%  |
+|  VAE  | 83,653,863 |  335 MB  |  8%  |
+| U-net      | 859,520,964 |  3.44 GB  |  80%  |
+| Total      | 1,066,235,307 | 4.27 GB |  100%  |
+
+U-net是最核心的组件，CLIP相对也比较重要。因此，我们选择U-net和CLIP的Attention模块进行微调。
+
+> LoRA的核心思想是通过低秩分解降低大规模模型的参数更新需求，从而减少训练成本。其数学形式为：
+> $$
+> W' = W + \Delta W
+> $$
+> 其中：
+>
+> - $W$：原始权重矩阵（冻结，不更新）；
+> - $\Delta W$：通过低秩分解获得的矩阵，$\Delta W = AB$
+>   - $A$：低秩矩阵，形状为$(d, r)$；
+>   - $B$：低秩矩阵，形状为$(r,d)$；
+>   - $r$：秩，远小于$d$。
+>
+> 在LoRA中，直接使用低秩矩阵$AB$更新$\Delta W $有时会导致以下问题：
+>
+> 1. **不稳定的训练：**如果$AB$的值范围过大，与原始权重$W$相比可能导致数值不稳定，模型难以收敛；
+> 2. **更新幅度过大：**如果没有约束，$AB$的影响可能过强，导致模型偏离预训练权重；
+> 3. **无法灵活调节：**不同任务对参数调整的灵敏性不同，有时需要更大或更小的权重贡献。
+>
+> 为了解决这些问题，LoRA引入了一个缩放因子$\alpha$，控制$\Delta W$的影响：
+> $$
+> W' = W + \frac \alpha rAB
+> $$
+>
+> - $\alpha$ ：缩放因子，即`lora_alpha`，用于调节$AB$对总权重更新的贡献；
+> - $r$：低秩矩阵的秩，用于规范化。
+>
+> 通过缩放因子$\alpha$，可以有效平衡原始权重$W$和LoRA矩阵$AB$的贡献。
 
 
 
