@@ -183,7 +183,7 @@ with open(validation_prompt_path, "r") as f:
 
 **设置LoRA Config**
 
-> 原版代码导入了`peft`并设置了`lora_rank`和`lora_alpha`参数，但是没有真正使用LoRA作微调。出于学习的目的，笔者改造了源代码，提供一版使用LoRA微调的代码，供大家学习交流。
+> 原版代码导入了`peft`并设置了`lora_rank`和`lora_alpha`参数，但是没有真正使用LoRA作微调。出于学习的目的，笔者改写了源代码，提供一版使用LoRA微调的代码，供大家学习交流。
 
 Stable Diffusion模型包含三个组件：CLIP、U-net、VAE。参数量分布和占比为：
 [来源](https://forums.fast.ai/t/stable-diffusion-parameter-budget-allocation/101515)
@@ -225,6 +225,90 @@ U-net是最核心的组件，CLIP相对也比较重要。因此，我们选择U-
 >
 > 通过缩放因子$\alpha$，可以有效平衡原始权重$W$和LoRA矩阵$AB$的贡献。
 
+使用Hugging Face的[PEFT(Parameter-Efficient Fine-Tuning)](https://huggingface.co/docs/peft/v0.13.0/en/index)实现LoRA微调👇，首先定义`LoraConfig`:
+
+```python
+# Stable Diffusion LoRA设置
+lora_config = LoraConfig(
+    r=lora_rank, # 低秩矩阵的秩
+    lora_alpha=lora_alpha, # 缩放因子
+    target_modules=[
+        "q_proj", "v_proj", "k_proj", "out_proj",  # 指定Text encoder(CLIP)的LoRA应用对象（用于调整注意力机制中的投影矩阵）
+        "to_k", "to_q", "to_v", "to_out.0"  # 指定UNet的LoRA应用对象（用于调整UNet中的注意力机制）
+    ], # 应用LoRA的模块名称
+    lora_dropout=0 # LoRA层的dropout概率
+)
+```
+
+target_modules指定模型结构中应用LoRA机制的模块名称。如果不指定，将根据模型结构选择模块。
+
+**应用LoRA**
+
+使用`peft`库的`get_peft_model`将LoRA集成到Stable Diffusion的CLIP和U_net模块。
+
+```python
+# 将LoRA集成到text_encoder和unet
+    text_encoder = get_peft_model(text_encoder, lora_config)
+    unet = get_peft_model(unet, lora_config)
+```
+
+**完整代码：**
+
+```python
+def prepare_lora_model(pretrained_model_name_or_path="runwayml/stable-diffusion-v1-5", model_path=None):
+    """
+    (1) Goal:
+        - This function is used to get the whole stable diffusion model with lora layers and freeze non-lora parameters, including Tokenizer, Noise Scheduler, UNet, Text Encoder, and VAE
+
+    (2) Arguments:
+        - pretrained_model_name_or_path: str, model name from Hugging Face
+        - model_path: str, path to pretrained model.
+
+    (3) Returns:
+        - output: Tokenizer, Noise Scheduler, UNet, Text Encoder, and VAE
+
+    """
+    noise_scheduler = DDPMScheduler.from_pretrained(pretrained_model_name_or_path, subfolder="scheduler")
+    tokenizer = CLIPTokenizer.from_pretrained(
+        pretrained_model_name_or_path,
+        subfolder="tokenizer"
+    )
+    text_encoder = CLIPTextModel.from_pretrained(
+        pretrained_model_name_or_path,
+        torch_dtype=weight_dtype,
+        subfolder="text_encoder"
+    )
+    vae = AutoencoderKL.from_pretrained(
+        pretrained_model_name_or_path,
+        subfolder="vae"
+    )
+    unet = UNet2DConditionModel.from_pretrained(
+        pretrained_model_name_or_path,
+        torch_dtype=weight_dtype,
+        subfolder="unet"
+    )
+
+    # 将LoRA集成到text_encoder和unet
+    text_encoder = get_peft_model(text_encoder, lora_config)
+    unet = get_peft_model(unet, lora_config)
+
+    # 打印可训练参数
+    text_encoder.print_trainable_parameters()
+    unet.print_trainable_parameters()
+
+
+    # text_encoder = torch.load(os.path.join(model_path, "text_encoder.pt"))
+    # unet = torch.load(os.path.join(model_path, "unet.pt"))
+
+    # 冻结vae参数
+    vae.requires_grad_(False)
+
+    unet.to(DEVICE, dtype=weight_dtype)
+    vae.to(DEVICE, dtype=weight_dtype)
+    text_encoder.to(DEVICE, dtype=weight_dtype)
+    return tokenizer, noise_scheduler, unet, vae, text_encoder
+```
+
 
 
 Step: 200 Face Similarity Score: 1.1819632053375244 CLIP Score: 30.577381134033203 Faceless Images: 0
@@ -236,3 +320,13 @@ Face Similarity Score: 1.2155983448028564 CLIP Score: 30.146756172180176 Faceles
 Step: 2000 Face Similarity Score: 1.1477864980697632 CLIP Score: 30.112869262695312 Faceless Images: 0
 
 Face Similarity Score: 1.1696956157684326 CLIP Score: 29.713413848876954 Faceless Images: 0
+
+lora:
+
+trainable params: 2,359,296 || all params: 125,419,776 || trainable%: 1.8811 
+
+trainable params: 6,377,472 || all params: 865,898,436 || trainable%: 0.7365
+
+Step: 200 Face Similarity Score: 1.3072700500488281 CLIP Score: 30.069660186767578 Faceless Images: 1
+
+Step: 400 Face Similarity Score: 1.2510902881622314 CLIP Score: 30.896265665690105 Faceless Images: 0
