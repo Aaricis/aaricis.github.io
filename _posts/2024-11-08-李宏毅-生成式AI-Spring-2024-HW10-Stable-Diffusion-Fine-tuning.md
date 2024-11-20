@@ -69,7 +69,13 @@ $$
 
 ## Step 1. Fine-tune Stable Diffusion
 
-使用Hugging Face`stablediffusionapi/cyberrealistic-41`模型作为base model；训练数据为100张Brad Pitt的照片和对应的文本描述。如下图所示，照片和文本描述成对出现，具有相同的文件名。
+Stable Diffusion是一个text-to-image潜在扩散([Latent Diffusion](https://arxiv.org/abs/2112.10752))模型，由[CompVis](https://github.com/CompVis)、[Stability AI](https://stability.ai/)和[LAION](https://laion.ai/)的研究人员和工程师共同创建。它使用512x512大小的图片训练，数据集是[LAION-5B](https://laion.ai/blog/laion-5b/)的子集。LAION-5B是现存最大可自由访问的多模态数据库。Latent Diffusion有三个主要组成部分：
+
+1. An autoencoder(VAE);
+2. A U-Net;
+3. A text-encoder, e.g. CLIP's Text Encoder;
+
+在Stable Diffusion模型基础上进行微调，以实现个性化的需求。使用Hugging Face `stablediffusionapi/cyberrealistic-41`模型作为base model；训练数据为100张Brad Pitt的照片和对应的文本描述。如下图所示，照片和文本描述成对出现，具有相同的文件名。
 
 ![](../assets/images/Hung-yi_Lee/hw10-9.png)
 
@@ -244,13 +250,33 @@ target_modules指定模型结构中应用LoRA机制的模块名称。如果不�
 
 **应用LoRA**
 
-使用`peft`库的`get_peft_model`将LoRA集成到Stable Diffusion的CLIP和U_net模块。
+使用Hugging Face的[diffusers](https://colab.research.google.com/github/huggingface/notebooks/blob/main/diffusers/diffusers_intro.ipynb#scrollTo=QQXXMLKkCbUJ)库微调Stable Diffusion，diffusers的核心API可分为三个组成部分：
+
+1. **Pipelines（管道）**：pipeline是diffusers库中用于构建和运行扩散系统的高级接口。它将模型（model）和调度器（scheduler）等组件打包在一起，使得用户可以方便地进行推理和图像生成。pipeline通常包含多个组件，如特征提取器、安全检查器、文本编码器、分词器、UNet模型、VAE模型和调度器等。
+2. **Models（模型）**：model在扩散模型中主要指的是UNet模型（如UNet2DModel）和VAE模型（如AutoencoderKL）。UNet负责在每个时间步预测噪声残差，而VAE用于将图像编码到潜在的空间并进行解码。这些模型是执行扩散过程的核心，负责生成和处理图像数据。
+3. **Schedulers（调度器）**：scheduler控制着扩散过程中的时间步和噪声调度。它根据模型预测的噪声残差来更新图像，逐步从噪声图像恢复出清晰的图像。不同的scheduler实现了不同的扩散算法，如DDPM、DDIM、PNDM等，它们决定了噪声如何被添加和去除。
+
+**区别：**
+
+- pipeline提供了一个完整的工作流程，方便用户直接使用预训练模型进行推理。
+- model是执行生成任务的具体神经网络，负责图像的生成和处理。
+- scheduler是控制生成过程中时间步和噪声策略的算法，它与model紧密协作，但本身不包含模型权重。
+
+**联系：**
+
+- pipeline通常包含一个或多个model和一个scheduler，它们共同工作以实现图像的生成。
+- model的输出依赖于scheduler提供的时间步信息，而scheduler的行为则由model的输出指导。
+- 用户可以根据需要更换pipeline中的scheduler或model，以适应不同的应用场景或优化性能。
+
+使用`peft`库的`get_peft_model()`将LoRA集成到Stable Diffusion的CLIP和U_net模块。
 
 ```python
 # 将LoRA集成到text_encoder和unet
     text_encoder = get_peft_model(text_encoder, lora_config)
     unet = get_peft_model(unet, lora_config)
 ```
+
+定义`prepare_lora_model()`函数
 
 **完整代码：**
 
