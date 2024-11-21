@@ -252,9 +252,9 @@ target_modules指定模型结构中应用LoRA机制的模块名称。如果不�
 
 使用Hugging Face的[diffusers](https://colab.research.google.com/github/huggingface/notebooks/blob/main/diffusers/diffusers_intro.ipynb#scrollTo=QQXXMLKkCbUJ)库微调Stable Diffusion，diffusers的核心API可分为三个组成部分：
 
-1. **Pipelines（管道）**：pipeline是diffusers库中用于构建和运行扩散系统的高级接口。它将模型（model）和调度器（scheduler）等组件打包在一起，使得用户可以方便地进行推理和图像生成。pipeline通常包含多个组件，如特征提取器、安全检查器、文本编码器、分词器、UNet模型、VAE模型和调度器等。
-2. **Models（模型）**：model在扩散模型中主要指的是UNet模型（如UNet2DModel）和VAE模型（如AutoencoderKL）。UNet负责在每个时间步预测噪声残差，而VAE用于将图像编码到潜在的空间并进行解码。这些模型是执行扩散过程的核心，负责生成和处理图像数据。
-3. **Schedulers（调度器）**：scheduler控制着扩散过程中的时间步和噪声调度。它根据模型预测的噪声残差来更新图像，逐步从噪声图像恢复出清晰的图像。不同的scheduler实现了不同的扩散算法，如DDPM、DDIM、PNDM等，它们决定了噪声如何被添加和去除。
+1. **Pipeline（管道）**：pipeline是diffusers库中用于构建和运行扩散系统的高级接口。它将模型（model）和调度器（scheduler）等组件打包在一起，使得用户可以方便地进行推理和图像生成。pipeline通常包含多个组件，如特征提取器、安全检查器、文本编码器、分词器、UNet模型、VAE模型和调度器等。
+2. **Model（模型）**：model在扩散模型中主要指的是UNet模型（如UNet2DModel）和VAE模型（如AutoencoderKL）。UNet负责在每个时间步预测噪声残差，而VAE用于将图像编码到潜在的空间并进行解码。这些模型是执行扩散过程的核心，负责生成和处理图像数据。
+3. **Scheduler（调度器）**：scheduler控制着扩散过程中的时间步和噪声调度。它根据模型预测的噪声残差来更新图像，逐步从噪声图像恢复出清晰的图像。不同的scheduler实现了不同的扩散算法，如DDPM、DDIM、PNDM等，它们决定了噪声如何被添加和去除。
 
 **区别：**
 
