@@ -527,6 +527,258 @@ train_dataloader = torch.utils.data.DataLoader(
 )
 ```
 
+### 开始微调
+
+训练的损失函数采用[Min-SNR](https://hugging-face.cn/papers/2303.09556)（最小信噪比加权）策略，以加快扩散模型收敛。
+
+
+
+微调模型并保存中间检查点。
+
+```python
+global_step = 0
+num_epochs = math.ceil(max_train_steps / len(train_dataloader))
+validation_step = int(max_train_steps * validation_step_ratio)
+best_face_score = float("inf")
+for epoch in range(num_epochs):
+    torch.cuda.empty_cache()
+    unet.train()
+    text_encoder.train()
+    for step, batch in enumerate(train_dataloader):
+        if global_step >= max_train_steps:
+            break
+
+        # 使用vae将图像编码为latent representation
+        latents = vae.encode(batch["pixel_values"].to(DEVICE, dtype=weight_dtype)).latent_dist.sample()
+        latents = latents * vae.config.scaling_factor
+
+        # Sample noise that we'll add to the latents
+        noise = torch.randn_like(latents)
+        bsz = latents.shape[0]
+        timesteps = torch.randint(0, noise_scheduler.config.num_train_timesteps, (bsz,), device=latents.device)
+        timesteps = timesteps.long()
+        noisy_latents = noise_scheduler.add_noise(latents, noise, timesteps)
+
+        # Get the text embedding for conditioning
+        encoder_hidden_states = text_encoder(batch["input_ids"].to(latents.device), return_dict=False)[0]
+        if noise_scheduler.config.prediction_type == "epsilon":
+            target = noise
+        elif noise_scheduler.config.prediction_type == "v_prediction":
+            target = noise_scheduler.get_velocity(latents, noise, timesteps)
+
+        # 输入噪声、时间步、text embedding，使用unet进行预测
+        model_pred = unet(noisy_latents, timesteps, encoder_hidden_states, return_dict=False)[0]
+        if not snr_gamma: # 不使用snr_gamma
+            loss = F.mse_loss(model_pred.float(), target.float(), reduction="mean") # 标准均方误差损失函数
+        else: # 使用snr_gamma，基于信噪比对损失进行加权
+            snr = compute_snr(noise_scheduler, timesteps) #计算给定timestep的snr值
+            mse_loss_weights = torch.stack([snr, snr_gamma * torch.ones_like(timesteps)], dim=1).min(
+                dim=1
+            )[0] #使用snr和snr_gamma计算每个timestep的损失权重
+            if noise_scheduler.config.prediction_type == "epsilon": # 噪声预测
+                mse_loss_weights = mse_loss_weights / snr # 降低权重随信噪比的变化
+            elif noise_scheduler.config.prediction_type == "v_prediction": # 速度预测
+                mse_loss_weights = mse_loss_weights / (snr + 1) # # 进一步平滑调整权重
+
+            loss = F.mse_loss(model_pred.float(), target.float(), reduction="none") # 计算逐元素的均方误差
+            loss = loss.mean(dim=list(range(1, len(loss.shape)))) * mse_loss_weights # 对非批次维度取均值，得到每个样本的损失，乘以对应时间步的加权因子
+            loss = loss.mean() # 对所有样本的加权损失求平均值，作为最终损失值
+        
+        # 反向传播
+        loss.backward() # 计算梯度
+        optimizer.step() # 更新模型参数
+        lr_scheduler.step() # 更新学习率
+        optimizer.zero_grad() # 梯度清零
+        progress_bar.update(1) # 更新进度条
+        global_step += 1 # 更新全局步数
+
+        # 验证模型性能
+        if global_step % validation_step == 0 or global_step == max_train_steps:
+            # 保存当前检查点
+            save_path = os.path.join(output_folder, f"checkpoint-last")
+            unet_path = os.path.join(save_path, "unet.pt")
+            text_encoder_path = os.path.join(save_path, "text_encoder.pt")
+            print(f"Saving Checkpoint to {save_path} ......")
+            os.makedirs(save_path, exist_ok=True)
+            torch.save(unet, unet_path)
+            torch.save(text_encoder, text_encoder_path)
+            save_path = os.path.join(output_folder, f"checkpoint-{global_step + 1000}")
+            os.makedirs(save_path, exist_ok=True)
+
+            # 评估模型性能
+            face_score, clip_score, mis = evaluate(
+                pretrained_model_name_or_path=pretrained_model_name_or_path,
+                weight_dtype=weight_dtype,
+                seed=seed,
+                unet_path=unet_path,
+                text_encoder_path=text_encoder_path,
+                validation_prompt=validation_prompt[:validation_prompt_num],
+                output_folder=save_path,
+                train_emb=dataset.train_emb
+            )
+            print("Step:", global_step, "Face Similarity Score:", face_score, "CLIP Score:", clip_score, "Faceless Images:", mis)
+            if face_score < best_face_score: # 保存当前最佳结果
+                best_face_score = face_score
+                save_path = os.path.join(output_folder, f"checkpoint-best")
+                unet_path = os.path.join(save_path, "unet.pt")
+                text_encoder_path = os.path.join(save_path, "text_encoder.pt")
+                os.makedirs(save_path, exist_ok=True)
+                torch.save(unet, unet_path)
+                torch.save(text_encoder, text_encoder_path)
+print("Fine-tuning Finished!!!")
+```
+
+
+
+
+
+## Step 2. Generate Images
+
+使用验证集prompt和fine tune最终得到的模型生成图片，用于验证的prompt如下：
+
+```tex
+A man in a black hoodie and khaki pants.
+A man sports a red polo and denim jacket.
+A man wears a blue shirt and brown blazer.
+A man dons a white button-up and cardigan.
+A man in a striped shirt and leather jacket.
+A man wears a green sweater and gray vest.
+A man sports a black suit and tie.
+A man in a denim shirt and bomber jacket.
+A man wears a plaid flannel and puffer vest.
+A man dons a hoodie and windbreaker.
+A man in a V-neck sweater and coat.
+A man wears a checkered shirt and trench coat.
+A man in a graphic tee and sport coat.
+A man sports a hoodie and quilted jacket.
+A man wears a button-up and suede jacket.
+A man in a knit sweater and leather vest.
+A man dons a pullover and duffle coat.
+A man wears a henley shirt and parka.
+A man in a zip-up hoodie and blazer.
+A man sports a chambray shirt and overcoat.
+A man wears a crewneck sweater and bomber.
+A man in a long-sleeve tee and pea coat.
+A man dons a polo shirt and varsity jacket.
+A man wears a patterned shirt and raincoat.
+A man in a mock neck and moto jacket.
+```
+
+加载最后一个检查点`checkpoint-last`作为最终的模型进行推理。使用`def evaluate()`函数生成图片和评分。
+
+```python
+torch.cuda.empty_cache()
+checkpoint_path = os.path.join(output_folder, f"checkpoint-last") # 設定使用哪個checkpoint inference
+unet_path = os.path.join(checkpoint_path, "unet.pt")
+text_encoder_path = os.path.join(checkpoint_path, "text_encoder.pt")
+inference_path = os.path.join(project_dir, "inference")
+os.makedirs(inference_path, exist_ok=True)
+train_image_paths = []
+for ext in IMAGE_EXTENSIONS:
+    train_image_paths.extend(glob.glob(f"{images_folder}/*{ext}"))
+train_image_paths = sorted(train_image_paths)
+train_emb = torch.tensor([DeepFace.represent(img_path, detector_backend="ssd", model_name="GhostFaceNet", enforce_detection=False)[0]['embedding'] for img_path in train_image_paths])
+
+face_score, clip_score, mis = evaluate(
+    pretrained_model_name_or_path=pretrained_model_name_or_path,
+    weight_dtype=weight_dtype,
+    seed=seed,
+    unet_path=unet_path,
+    text_encoder_path=text_encoder_path,
+    validation_prompt=validation_prompt,
+    output_folder=inference_path,
+    train_emb=train_emb,
+)
+print("Face Similarity Score:", face_score, "CLIP Score:", clip_score, "Faceless Images:", mis)
+```
+
+
+
+## Step 3. Evaluate Images
+
+定义评估函数，计算图片的相似性以及文本-图像的匹配程度。
+
+```python
+def evaluate(pretrained_model_name_or_path, weight_dtype, seed, unet_path, text_encoder_path, validation_prompt, output_folder, train_emb):
+    """
+    (1) Goal:
+        - This function is used to evaluate Stable Diffusion by loading UNet and Text Encoder from the given path and calculating face similarity, CLIP score, and the number of faceless images.
+
+    (2) Arguments:
+        - pretrained_model_name_or_path: str, model name from Hugging Face
+        - weight_dtype: torch.type, model weight type
+        - seed: int, random seed
+        - unet_path: str, path to UNet model checkpoint
+        - text_encoder_path: str, path to Text Encoder model checkpoint
+        - validation_prompt: list, list of str storing texts for validation
+        - output_folder: str, directory for saving generated images
+        - train_emb: tensor, face features of training images
+
+    (3) Returns:
+        - output: face similarity, CLIP score, the number of faceless images
+
+    """
+    pipeline = DiffusionPipeline.from_pretrained(
+        pretrained_model_name_or_path,
+        torch_dtype=weight_dtype,
+        safety_checker=None,
+    )
+    pipeline.unet = torch.load(unet_path)
+    pipeline.text_encoder = torch.load(text_encoder_path)
+    pipeline = pipeline.to(DEVICE)
+    clip_model_name = "openai/clip-vit-base-patch32"
+    clip_model = AutoModel.from_pretrained(clip_model_name)
+    clip_processor = AutoProcessor.from_pretrained(clip_model_name)
+
+    # run inference
+    with torch.no_grad():
+        generator = torch.Generator(device=DEVICE) # 创建一个新的伪随机数生成器
+        generator = generator.manual_seed(seed) # 设置随机数种子
+        face_score = 0
+        clip_score = 0
+        mis = 0
+        print("Generating validaion pictures ......")
+        images = []
+        for i in range(0, len(validation_prompt), 4): # 遍历validation_prompt，每次处理4个提示
+            # 使用pipeline根据提示生成图像，添加到images列表中
+            images.extend(pipeline(validation_prompt[i:min(i + 4, len(validation_prompt))], num_inference_steps=30, generator=generator).images)
+        
+        # 计算面部相似度和CLIP分数
+        print("Calculating validaion score ......")
+        valid_emb = []
+        for i, image in enumerate(tqdm(images)):
+            torch.cuda.empty_cache()
+            save_file = f"{output_folder}/valid_image_{i}.png"
+            image.save(save_file) # 将生成的图像保存到指定目录
+            opencvImage = cv2.cvtColor(np.array(image), cv2.COLOR_RGB2BGR) # 使用OpenCV的cv2Color函数将图像从RGB颜色空间转化为BGR颜色空间
+            emb = DeepFace.represent( # 使用DeepFace库提取面部特征嵌入
+                opencvImage,
+                detector_backend="ssd",
+                model_name="GhostFaceNet",
+                enforce_detection=False,
+            )
+            if emb == [] or emb[0]['face_confidence'] == 0: # 统计无法检测到面部的图片
+                mis += 1
+                continue
+            # 计算CLIP分数，评估图片与文本的匹配程度
+            emb = emb[0]
+            inputs = clip_processor(text=validation_prompt[i], images=image, return_tensors="pt") # 处理CLIP模型的输入，输入文本和图像，返回适合模型输入的格式
+            with torch.no_grad():
+                outputs = clip_model(**inputs) # 使用CLIP模型，计算文本和图像的相似度
+            sim = outputs.logits_per_image # 提取相似度分数
+            clip_score += sim.item() # tensor转为数值
+            valid_emb.append(emb['embedding'])
+        if len(valid_emb) == 0:
+            return 0, 0, mis
+        valid_emb = torch.tensor(valid_emb)
+        valid_emb = (valid_emb / torch.norm(valid_emb, p=2, dim=-1)[:, None]).cuda() # 归一化处理
+        train_emb = (train_emb / torch.norm(train_emb, p=2, dim=-1)[:, None]).cuda()
+        face_score = torch.cdist(valid_emb, train_emb, p=2).mean().item() # 计算距离
+        # face_score = torch.min(face_score, 1)[0].mean()
+        clip_score /= len(validation_prompt) - mis # 计算平均相似度
+    return face_score, clip_score, mis
+```
+
 
 
 Step: 200 Face Similarity Score: 1.1819632053375244 CLIP Score: 30.577381134033203 Faceless Images: 0
