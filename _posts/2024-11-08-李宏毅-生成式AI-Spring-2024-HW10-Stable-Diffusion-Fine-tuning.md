@@ -81,7 +81,7 @@ Stable Diffusion是一个text-to-image潜在扩散([Latent Diffusion](https://ar
 
 
 
-**安装必要的库：**
+### 安装必要的库：
 
 ```python
 # Install the required packages
@@ -102,7 +102,7 @@ os.chdir(root_dir)
 !pip -q install keras==3.2.0
 ```
 
-**导入必要的包：**
+### 导入必要的包：
 
 ```python
 #@markdown ##  Import necessary packages
@@ -153,7 +153,7 @@ from deepface import DeepFace
 import cv2
 ```
 
-**参数设置**
+### 参数设置
 
 ```python
 output_folder = os.path.join(project_dir, "logs") # 存放model checkpoints跟validation結果的資料夾
@@ -187,7 +187,7 @@ with open(validation_prompt_path, "r") as f:
     validation_prompt = [line.strip() for line in f.readlines()]
 ```
 
-**设置LoRA Config**
+### 设置LoRA Config
 
 > 原版代码导入了`peft`并设置了`lora_rank`和`lora_alpha`参数，但是没有真正使用LoRA作微调。出于学习的目的，笔者改写了源代码，提供一版使用LoRA微调的代码，供大家学习交流。
 
@@ -248,9 +248,11 @@ lora_config = LoraConfig(
 
 target_modules指定模型结构中应用LoRA机制的模块名称。如果不指定，将根据模型结构选择模块。
 
-**应用LoRA**
+### 应用LoRA
 
-使用Hugging Face的[diffusers](https://colab.research.google.com/github/huggingface/notebooks/blob/main/diffusers/diffusers_intro.ipynb#scrollTo=QQXXMLKkCbUJ)库微调Stable Diffusion，diffusers的核心API可分为三个组成部分：
+为了将LoRA应用到Stable Diffusion的Attention模块，我们需要自己搭建Stable Diffusion模型框架。
+
+使用Hugging Face的[diffusers](https://colab.research.google.com/github/huggingface/notebooks/blob/main/diffusers/diffusers_intro.ipynb#scrollTo=QQXXMLKkCbUJ)库实现微调Stable Diffusion，diffusers的核心API可分为三个组成部分：
 
 1. **Pipeline（管道）**：pipeline是diffusers库中用于构建和运行扩散系统的高级接口。它将模型（model）和调度器（scheduler）等组件打包在一起，使得用户可以方便地进行推理和图像生成。pipeline通常包含多个组件，如特征提取器、安全检查器、文本编码器、分词器、UNet模型、VAE模型和调度器等。
 2. **Model（模型）**：model在扩散模型中主要指的是UNet模型（如UNet2DModel）和VAE模型（如AutoencoderKL）。UNet负责在每个时间步预测噪声残差，而VAE用于将图像编码到潜在的空间并进行解码。这些模型是执行扩散过程的核心，负责生成和处理图像数据。
@@ -268,6 +270,50 @@ target_modules指定模型结构中应用LoRA机制的模块名称。如果不�
 - model的输出依赖于scheduler提供的时间步信息，而scheduler的行为则由model的输出指导。
 - 用户可以根据需要更换pipeline中的scheduler或model，以适应不同的应用场景或优化性能。
 
+#### 使用diffusers创建自定义pipeline
+
+创建自定义pipeline是`diffusers`的高级用法，可以灵活的替换VAE或scheduler等组件。预训练模型`stablediffusionapi/cyberrealistic-41`包含组成diffusion pipeline的完整组件，它们存储在以下文件夹中：
+
+![](../assets/images/Hung-yi_Lee/hw10-10.png)
+
+- scheduler：在训练过程中逐步向图像中添加噪声；
+- text_encoder：将prompt的token转换为UNet可以理解的embedding表示；
+- tokenizer：将输入的prompt转化为token；
+- unet：训练过程中，生成图像的潜在表示的模型；
+- vae：autoencoder模块，将潜在表示解码为真实图片。
+
+我们可以向`from_pretrained()`方法指定`subfolder`参数从文件夹中加载相应组件。
+
+```python
+noise_scheduler = DDPMScheduler.from_pretrained(pretrained_model_name_or_path, subfolder="scheduler")
+    
+    # CLIP模型的分词器，用于将文本字符串转换为token id序列
+    tokenizer = CLIPTokenizer.from_pretrained(
+        pretrained_model_name_or_path,
+        subfolder="tokenizer"
+    )
+
+    # CLIPTextModel是CLIP模型的文本编码器部分，用于将文本转换为嵌入表示
+    text_encoder = CLIPTextModel.from_pretrained(
+        pretrained_model_name_or_path,
+        torch_dtype=weight_dtype,
+        subfolder="text_encoder"
+    )
+
+    # AutoencoderKL是一个VAE模型，用于将图像编码到潜在空间
+    vae = AutoencoderKL.from_pretrained(
+        pretrained_model_name_or_path,
+        subfolder="vae"
+    )
+
+    # UNet2DConditionModel是一个用于扩散模型的U-Net模型，用于在生成过程中预测噪声
+    unet = UNet2DConditionModel.from_pretrained(
+        pretrained_model_name_or_path,
+        torch_dtype=weight_dtype,
+        subfolder="unet"
+    )
+```
+
 使用`peft`库的`get_peft_model()`将LoRA集成到Stable Diffusion的CLIP和U_net模块。
 
 ```python
@@ -276,9 +322,7 @@ target_modules指定模型结构中应用LoRA机制的模块名称。如果不�
     unet = get_peft_model(unet, lora_config)
 ```
 
-定义`prepare_lora_model()`函数
-
-**完整代码：**
+定义`prepare_lora_model()`函数封装包含LoRA层的完整Stable Diffusion模型：
 
 ```python
 def prepare_lora_model(pretrained_model_name_or_path="runwayml/stable-diffusion-v1-5", model_path=None):
@@ -335,6 +379,154 @@ def prepare_lora_model(pretrained_model_name_or_path="runwayml/stable-diffusion-
     return tokenizer, noise_scheduler, unet, vae, text_encoder
 ```
 
+### 准备微调所需的数据集、LoRA模型和优化器
+
+**加载带LoRA层的Stable Diffusion模型**
+
+```python
+tokenizer, noise_scheduler, unet, vae, text_encoder = prepare_lora_model(pretrained_model_name_or_path, model_path)
+```
+
+**创建优化器**
+
+```python
+def prepare_optimizer(unet, text_encoder, unet_learning_rate=5e-4, text_encoder_learning_rate=1e-4):
+    """
+    (1) Goal:
+        - This function is used to feed trainable parameters from UNet and Text Encoder in to optimizer each with different learning rate
+
+    (2) Arguments:
+        - unet: UNet2DConditionModel, UNet from Hugging Face
+        - text_encoder: CLIPTextModel, Text Encoder from Hugging Face
+        - unet_learning_rate: float, learning rate for UNet
+        - text_encoder_learning_rate: float, learning rate for Text Encoder
+
+    (3) Returns:
+        - output: Optimizer
+
+    """
+    # 筛选UNet模型中需要梯度的参数
+    unet_lora_layers = list(filter(lambda p: p.requires_grad, unet.parameters()))
+    # 筛选text_encoder中需要梯度的参数
+    text_encoder_lora_layers = list(filter(lambda p: p.requires_grad, text_encoder.parameters()))
+
+    # 配置可训练参数列表
+    trainable_params = [
+        {"params": unet_lora_layers, "lr": unet_learning_rate},
+        {"params": text_encoder_lora_layers, "lr": text_encoder_learning_rate}
+    ]
+
+    # 创建优化器
+    optimizer = torch.optim.AdamW(
+        trainable_params,
+        lr=unet_learning_rate,
+    )
+    return optimizer
+
+optimizer = prepare_optimizer(
+    unet,
+    text_encoder,
+    unet_learning_rate,
+    text_encoder_learning_rate
+)
+```
+
+**创建学习率调度器**
+
+```python
+lr_scheduler = get_scheduler(
+    lr_scheduler_name,
+    optimizer=optimizer,
+    num_warmup_steps=lr_warmup_steps,
+    num_training_steps=max_train_steps,
+    num_cycles=3
+)
+```
+
+**准备数据集**
+
+```python
+class Text2ImageDataset(torch.utils.data.Dataset):
+    """
+    (1) Goal:
+        - This class is used to build dataset for finetuning text-to-image model
+
+    """
+    def __init__(self, images_folder, captions_folder, transform, tokenizer):
+        """
+        (2) Arguments:
+            - images_folder: str, path to images
+            - captions_folder: str, path to captions
+            - transform: function, turn raw image into torch.tensor
+            - tokenizer: CLIPTokenize, turn sentences into word ids
+        """
+        self.image_paths = []
+        for ext in IMAGE_EXTENSIONS:
+            self.image_paths.extend(glob.glob(f"{images_folder}/*{ext}"))
+        self.image_paths = sorted(self.image_paths)
+
+        # 遍历图像路径，使用DeepFace提取面部特征嵌入
+        self.train_emb = torch.tensor([DeepFace.represent(img_path, detector_backend="ssd", model_name="GhostFaceNet", enforce_detection=False)[0]['embedding'] for img_path in self.image_paths])
+        caption_paths = sorted(glob.glob(f"{captions_folder}/*txt"))
+        captions = []
+        for p in caption_paths:
+            with open(p, "r") as f:
+                captions.append(f.readline())
+        # 将文本转化为token
+        inputs = tokenizer(
+            captions, max_length=tokenizer.model_max_length, padding="max_length", truncation=True, return_tensors="pt"
+        )
+        self.input_ids = inputs.input_ids
+        self.transform = transform
+
+    def __getitem__(self, idx):
+        img_path = self.image_paths[idx]
+        input_id = self.input_ids[idx]
+        try:
+            image = Image.open(img_path).convert("RGB")
+            # convert to tensor temporarily so dataloader will accept it
+            tensor = self.transform(image)
+        except Exception as e:
+            print(f"Could not load image path: {img_path}, error: {e}")
+            return None
+
+
+        return tensor, input_id
+
+    def __len__(self):
+        return len(self.image_paths)
+
+dataset = Text2ImageDataset(
+    images_folder=images_folder,
+    captions_folder=captions_folder,
+    transform=train_transform,
+    tokenizer=tokenizer,
+)
+
+# 自定义批处理函数，将多个样本（examples）组合成一个batch
+def collate_fn(examples):
+    pixel_values = []
+    input_ids = []
+    for tensor, input_id in examples:
+        pixel_values.append(tensor)
+        input_ids.append(input_id)
+
+    # 图像tensor堆叠成一个多维tensor
+    pixel_values = torch.stack(pixel_values, dim=0).float()
+    # input_ids堆叠成一个多维tensor
+    input_ids = torch.stack(input_ids, dim=0)
+    return {"pixel_values": pixel_values, "input_ids": input_ids}
+
+# 使用pytorch DataLoader加载数据集
+train_dataloader = torch.utils.data.DataLoader(
+    dataset,
+    shuffle=True,
+    collate_fn=collate_fn,
+    batch_size=train_batch_size,
+    num_workers=8,
+)
+```
+
 
 
 Step: 200 Face Similarity Score: 1.1819632053375244 CLIP Score: 30.577381134033203 Faceless Images: 0
@@ -356,3 +548,11 @@ trainable params: 6,377,472 || all params: 865,898,436 || trainable%: 0.7365
 Step: 200 Face Similarity Score: 1.3072700500488281 CLIP Score: 30.069660186767578 Faceless Images: 1
 
 Step: 400 Face Similarity Score: 1.2510902881622314 CLIP Score: 30.896265665690105 Faceless Images: 0
+
+## Reference
+
+1. [Stable Diffusion with 🧨 Diffusers](https://huggingface.co/blog/stable_diffusion#stable-diffusion-with-%F0%9F%A7%A8-diffusers)
+2. [Diffusers](https://colab.research.google.com/github/huggingface/notebooks/blob/main/diffusers/diffusers_intro.ipynb#scrollTo=aCH4p1dtyaXX)
+3. [Training with Diffusers](https://colab.research.google.com/gist/anton-l/f3a8206dae4125b93f05b1f5f703191d/diffusers_training_example.ipynb)
+4. [Understanding pipelines, models and schedulers](https://colab.research.google.com/github/huggingface/notebooks/blob/main/diffusers_doc/en/pytorch/write_own_pipeline.ipynb#scrollTo=SwW8Va1frhDF)
+
