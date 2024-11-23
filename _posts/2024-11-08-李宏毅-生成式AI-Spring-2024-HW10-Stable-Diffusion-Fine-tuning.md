@@ -320,7 +320,16 @@ noise_scheduler = DDPMScheduler.from_pretrained(pretrained_model_name_or_path, s
 # 将LoRA集成到text_encoder和unet
     text_encoder = get_peft_model(text_encoder, lora_config)
     unet = get_peft_model(unet, lora_config)
+# 打印可训练参数
+    text_encoder.print_trainable_parameters()
+    unet.print_trainable_parameters()
 ```
+
+trainable params: 2,359,296 || all params: 125,419,776 || trainable%: 1.8811 
+
+trainable params: 6,377,472 || all params: 865,898,436 || trainable%: 0.7365
+
+使用LoRA后，需训练的参数不到原来的2%。
 
 定义`prepare_lora_model()`函数封装包含LoRA层的完整Stable Diffusion模型：
 
@@ -529,11 +538,11 @@ train_dataloader = torch.utils.data.DataLoader(
 
 ### 开始微调
 
-训练的损失函数采用[Min-SNR](https://hugging-face.cn/papers/2303.09556)（最小信噪比加权）策略，以加快扩散模型收敛。
+训练的损失函数采用[Min-SNR](https://arxiv.org/abs/2303.09556)（最小信噪比加权）策略，以加快扩散模型收敛。
 
+Denoising diffusion model是图像生成的主流方法，然而，训练这些模型往往存在收敛缓慢的问题。Hang等人发现收敛缓慢的部分原因是由于时间步间优化方向冲突导致的。为了解决这个问题，他们将扩散模型的训练视为多任务学习（multi-task learning）问题，引入$Min-SNR-\gamma$方法。该方法更具被限制的信噪比调整时间步的损失权重，有效地平衡了时间步之间的冲突，收敛速度比传统方法快3.4倍。
 
-
-微调模型并保存中间检查点。
+微调模型并保存中间检查点，训练循环如下：
 
 ```python
 global_step = 0
@@ -628,10 +637,6 @@ for epoch in range(num_epochs):
 print("Fine-tuning Finished!!!")
 ```
 
-
-
-
-
 ## Step 2. Generate Images
 
 使用验证集prompt和fine tune最终得到的模型生成图片，用于验证的prompt如下：
@@ -692,9 +697,25 @@ face_score, clip_score, mis = evaluate(
 print("Face Similarity Score:", face_score, "CLIP Score:", clip_score, "Faceless Images:", mis)
 ```
 
+最终生成的图片都是Brad Pitt的脸配上不同的衣服。
 
+![](../assets/images/Hung-yi_Lee/hw10-11.png)
 
 ## Step 3. Evaluate Images
+
+### Face Distance Score
+
+对于每张生成的人脸，计算它与所有训练图片的平均距离，然后对所有生成的图片取平均。人脸的距离使用神经网络[GhostFaceNet](https://github.com/HamadYA/GhostFaceNets)计算。
+$$
+F(D_G,D_T) = \frac{1}{\Vert D_G \Vert \Vert D_T \Vert}\sum_{d_G \in D_G}\sum_{d_T \in D_T}f(d_G,d_T)
+$$
+其中，$D_G$是生成的人脸，$D_T$是训练数据，$f(*)$是GhostFaceNet。
+
+我们要生成Brad Pitt的脸，因此$F(D_G,D_T)$越小越好。
+
+### CLIP Score
+
+[CLIP](https://github.com/openai/CLIP) Score可以衡量文本和图像之间的相似度，得分越高相关性越大。CLIP模型使用`openai/clip-vit-base-patch32`。
 
 定义评估函数，计算图片的相似性以及文本-图像的匹配程度。
 
@@ -779,32 +800,35 @@ def evaluate(pretrained_model_name_or_path, weight_dtype, seed, unet_path, text_
     return face_score, clip_score, mis
 ```
 
+## Results
 
+**训练200个step:**
 
 Step: 200 Face Similarity Score: 1.1819632053375244 CLIP Score: 30.577381134033203 Faceless Images: 0
 
 Face Similarity Score: 1.2155983448028564 CLIP Score: 30.146756172180176 Faceless Images: 1
 
-
+**训练2000个step:** 结果略微提升，但不明显
 
 Step: 2000 Face Similarity Score: 1.1477864980697632 CLIP Score: 30.112869262695312 Faceless Images: 0
 
 Face Similarity Score: 1.1696956157684326 CLIP Score: 29.713413848876954 Faceless Images: 0
 
-lora:
+## Link
 
-trainable params: 2,359,296 || all params: 125,419,776 || trainable%: 1.8811 
-
-trainable params: 6,377,472 || all params: 865,898,436 || trainable%: 0.7365
-
-Step: 200 Face Similarity Score: 1.3072700500488281 CLIP Score: 30.069660186767578 Faceless Images: 1
-
-Step: 400 Face Similarity Score: 1.2510902881622314 CLIP Score: 30.896265665690105 Faceless Images: 0
+[完整代码](https://colab.research.google.com/drive/1ue6knQcAEJB3kTv8DqSq-nBCYv-gES2d#scrollTo=3Kuc0_PcHW48)
 
 ## Reference
 
 1. [Stable Diffusion with 🧨 Diffusers](https://huggingface.co/blog/stable_diffusion#stable-diffusion-with-%F0%9F%A7%A8-diffusers)
+
 2. [Diffusers](https://colab.research.google.com/github/huggingface/notebooks/blob/main/diffusers/diffusers_intro.ipynb#scrollTo=aCH4p1dtyaXX)
+
 3. [Training with Diffusers](https://colab.research.google.com/gist/anton-l/f3a8206dae4125b93f05b1f5f703191d/diffusers_training_example.ipynb)
+
 4. [Understanding pipelines, models and schedulers](https://colab.research.google.com/github/huggingface/notebooks/blob/main/diffusers_doc/en/pytorch/write_own_pipeline.ipynb#scrollTo=SwW8Va1frhDF)
+
+5. [Efficient Diffusion Training via Min-SNR Weighting Strategy](https://arxiv.org/abs/2303.09556)
+
+   
 
