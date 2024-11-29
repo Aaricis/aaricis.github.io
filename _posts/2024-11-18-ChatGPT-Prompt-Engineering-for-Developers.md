@@ -261,7 +261,7 @@ Actual solution:
 
 > 这个策略对gpt-3.5-turbo是有效的，但是gpt-4不需要使用这个策略就能自动输出解题过程和正确答案。
 >
-> ![](..\assets\images\llm_develop\prompt-3.png)
+> ![](../assets/images/llm_develop/prompt-3.png)
 
 ### 模型的局限性：幻觉（Hallucinations）
 
