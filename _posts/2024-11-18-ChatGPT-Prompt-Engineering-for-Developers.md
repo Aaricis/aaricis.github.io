@@ -280,3 +280,172 @@ Tell me about AeroGlide UltraSlim Smart Toothbrush by Boie
 我们拿同样的prompt去问gpt-4，gpt-4会告诉我们'Boie'公司和'AeroGlide UltraSlim Smart Toothbrush'都是不存在的。
 
 ![](../assets/images/llm_develop/prompt-5.png)
+
+## Iterative Prompt Development
+
+在开发应用时，很难通过第一次尝试就得到完美的prompt。如下图所示，需要进行多次迭代优化才能不断改进。
+
+![](../assets/images/llm_develop/prompt-6.png)
+
+具体地，首先编写初始prompt，观察模型生成的结果是否满足需求；如果不理想，使用[两个Principle](##Prompting Principles)改进prompt，再次尝试运行。如此循环多次，直到找到合适的prompt。
+
+通过产品说明书生成营销产品描述：[Generate a marketing product description from a product fact sheet](https://learn.deeplearning.ai/courses/chatgpt-prompt-eng/lesson/3/iterative)
+
+从初始prompt开始，逐步解决了3个issue（Issue 1: The text is too long、Issue 2. Text focuses on the wrong details、Issue 3. Description needs a table of dimensions），最终获得满足需求的prompt。
+
+## Summarizing
+
+使用LLM对文本作摘要，从复杂的文本中快速提取出关键点。
+
+概括电商平台评论：[Summarizing](https://learn.deeplearning.ai/courses/chatgpt-prompt-eng/lesson/4/summarizing)
+
+客户为一款熊猫公仔进行了点评，评价内容包括商品的质量、大小、价格和物流速度等因素，以及他的女儿对该商品的喜爱程度。通过编写不同的prompt，可以限制生成文本长度<30字、提取信息时有侧重（例如快递服务、价格与质量）。使用提取（extract）而非概括（summarize）可以滤掉其他无关信息，只保留某一方面的信息。调用OpenAI的API接口能够同时总结多个文本。
+
+## Inferring
+
+与传统机器学习不同，使用LLM完成情感推断、信息提取、主题推断等任务，只需编写不同的prompt，不必单独为每个任务训练不同模型。
+
+从产品评论和新闻文章中推断情绪和主题：[Inferring](https://learn.deeplearning.ai/login?callbackUrl=https%3A%2F%2Flearn.deeplearning.ai%2Fcourses%2Fchatgpt-prompt-eng%2Flesson%2F5%2Finferring)
+
+## Transforming
+
+大语言模型具有强大的文本转换能力，可以实现多语言翻译、拼写纠正、语法调整、格式转换等不同类型的文本转换任务。利用语言模型进行各类转换是它的典型应用之一。
+
+使用LLM进行文本转换任务：[Transforming](https://learn.deeplearning.ai/courses/chatgpt-prompt-eng/lesson/6/transforming)
+
+## Expanding
+
+文本扩展是大语言模型的一个重要应用方向，输入简短文本，生成更加丰富的长文。
+
+根据每个客户评论生成电子邮件：[Expanding](https://learn.deeplearning.ai/courses/chatgpt-prompt-eng/lesson/7/expanding)
+
+## Chatbot
+
+使用LLM构建chatbot（聊天机器人）进行多轮对话。
+
+chatgpt API[openai.ChatCompletion.create](https://platform.openai.com/docs/api-reference/chat/create)调用gpt-3.5-turbo，输入数据是包含多个dict的list：
+
+```python
+[
+	{'role':xxx, 'content':xxxxxx},
+	{'role':xxx, 'content':xxxxxx},
+	......
+]
+```
+
+'role'有三个选项：
+
+- system（系统）：聊天系统的控制层面，它通常用于发送关于会话流程、规则设定、功能说明或技术性的信息；
+- user（用户）：与聊天机器人交互的人类用户；
+- assistant（助手）：聊天机器人本身。
+
+'content'：role发送的具体信息。一个典型的message类似这样：
+
+```python
+messages =  [  
+{'role':'system', 'content':'You are an assistant that speaks like Shakespeare.'},    
+{'role':'user', 'content':'tell me a joke'},   
+{'role':'assistant', 'content':'Why did the chicken cross the road'},   
+{'role':'user', 'content':'I don\'t know'}  ]
+```
+
+### 给定角色
+
+要构建不同身份的chatbot，我们以系统身份发送系统消息，设置chatbot的角色。
+
+![](../assets/images/llm_develop/prompt-7.png)
+
+通过系统消息来定义：”你是一个说话像莎士比亚的助手“，助手的回答也是莎士比亚风格的。
+
+### 构建上下文
+
+![](../assets/images/llm_develop/prompt-8.png)
+
+我们连续向模型提问两次，首先告诉模型'my name is Isa '，紧接着问模型'What is my name?'，但是模型并不记得my name。这是因为每次跟语言模型的交互都是独立的，如果想让模型“记住”早期的对话，必须在messages中提供早期的对话内容，即上下文（context）。
+
+![](../assets/images/llm_develop/prompt-9.png)
+
+我们给模型提供完整的上下文，然后问'What is my name?'，模型知道'Your name is Isa.'。
+
+### OrderBot
+
+自动收集用户prompt和模型响应构建OrderBot（点餐机器人）。
+
+`def collect_messages(_)`使用列表`context`收集完整上下文。
+
+```python
+def collect_messages(_): 
+    prompt = inp.value_input
+    inp.value = ''
+    context.append({'role':'user', 'content':f"{prompt}"})
+    response = get_completion_from_messages(context) 
+    context.append({'role':'assistant', 'content':f"{response}"})
+    panels.append(
+        pn.Row('User:', pn.pane.Markdown(prompt, width=600)))
+    panels.append(
+        pn.Row('Assistant:', pn.pane.Markdown(response, width=600, style={'background-color': '#F6F6F6'})))
+ 
+    return pn.Column(*panels)
+```
+
+使用`panel`可视化界面。
+
+```python
+import panel as pn  # GUI
+pn.extension()
+
+panels = [] # collect display 
+
+context = [ {'role':'system', 'content':"""
+You are OrderBot, an automated service to collect orders for a pizza restaurant. \
+You first greet the customer, then collects the order, \
+and then asks if it's a pickup or delivery. \
+You wait to collect the entire order, then summarize it and check for a final \
+time if the customer wants to add anything else. \
+If it's a delivery, you ask for an address. \
+Finally you collect the payment.\
+Make sure to clarify all options, extras and sizes to uniquely \
+identify the item from the menu.\
+You respond in a short, very conversational friendly style. \
+The menu includes \
+pepperoni pizza  12.95, 10.00, 7.00 \
+cheese pizza   10.95, 9.25, 6.50 \
+eggplant pizza   11.95, 9.75, 6.75 \
+fries 4.50, 3.50 \
+greek salad 7.25 \
+Toppings: \
+extra cheese 2.00, \
+mushrooms 1.50 \
+sausage 3.00 \
+canadian bacon 3.50 \
+AI sauce 1.50 \
+peppers 1.00 \
+Drinks: \
+coke 3.00, 2.00, 1.00 \
+sprite 3.00, 2.00, 1.00 \
+bottled water 5.00 \
+"""} ]  # accumulate messages
+
+
+inp = pn.widgets.TextInput(value="Hi", placeholder='Enter text here…')
+button_conversation = pn.widgets.Button(name="Chat!")
+
+interactive_conversation = pn.bind(collect_messages, button_conversation)
+
+dashboard = pn.Column(
+    inp,
+    pn.Row(button_conversation),
+    pn.panel(interactive_conversation, loading_indicator=True, height=300),
+)
+
+dashboard
+```
+
+运行上面的代码可以得到一个点餐机器人，下图展示了点餐的交互过程：
+
+![](../assets/images/llm_develop/prompt-10.png)
+
+## Conclusion
+
+本课程首先介绍了编写好的prompt的两个准则：编写明确具体的指令和给模型时间去思考。然后，给出编写好的prompt的迭代方法并展示了如何使用LLM完成文本摘要、推断、转化和扩展任务。最后介绍如何构建一个多轮对话聊天机器人。
+
