@@ -287,7 +287,7 @@ Tell me about AeroGlide UltraSlim Smart Toothbrush by Boie
 
 ![](../assets/images/llm_develop/prompt-6.png)
 
-具体地，首先编写初始prompt，观察模型生成的结果是否满足需求；如果不理想，使用[两个Principle](##Prompting Principles)改进prompt，再次尝试运行。如此循环多次，直到找到合适的prompt。
+具体地，首先编写初始prompt，观察模型生成的结果是否满足需求；如果不理想，使用[两个Principle](#Prompting Principles)改进prompt，再次尝试运行。如此循环多次，直到找到合适的prompt。
 
 通过产品说明书生成营销产品描述：[Generate a marketing product description from a product fact sheet](https://learn.deeplearning.ai/courses/chatgpt-prompt-eng/lesson/3/iterative)
 
