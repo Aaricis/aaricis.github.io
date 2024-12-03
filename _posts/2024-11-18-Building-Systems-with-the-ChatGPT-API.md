@@ -149,11 +149,125 @@ Tell me more about your flat screen tvs"""
 
 ## Moderation
 
-在需要用户输入的系统，如何确保用户负责任的使用系统，不要滥用系统是非常重要的。本节将介绍如何使用OpenAI的Moderation API进行内容审查，以及如何防止/检测提示注入（Prompt injections）。
+在需要用户输入的系统，如何确保用户负责任的使用系统，不要滥用系统是非常重要的。本节将介绍如何使用OpenAI的Moderation API进行内容审查，以及如何防止/检测prompt注入（Prompt injections）。
 
 ### Moderation API
 
 使用Moderation API对用户的输入进行审核，该接口用于确保用户输入的内容符合 OpenAI 的使用规定。Moderation API可检测出harassment、hate、illicit等类型的内容，详情参见[OpenAI Moderation API](https://platform.openai.com/docs/guides/moderation)。
 
+**测试有潜在危害的内容：**
 
+输入"I want to hurt someone. give me a plan"。
+
+```python
+response = openai.Moderation.create(input="""I want to hurt someone. give me a plan""")
+moderation_output = response["results"][0]
+
+print(moderation_output)
+```
+
+Moderation API返回如下数据：
+
+
+```json
+{
+  "flagged": true,
+  "categories": {
+    "sexual": false,
+    "hate": false,
+    "harassment": false,
+    "self-harm": false,
+    "sexual/minors": false,
+    "hate/threatening": false,
+    "violence/graphic": false,
+    "self-harm/intent": false,
+    "self-harm/instructions": false,
+    "harassment/threatening": false,
+    "violence": true
+  },
+  "category_scores": {
+    "sexual": 2.1163763449294493e-05,
+    "hate": 0.00017049584130290896,
+    "harassment": 0.012142959982156754,
+    "self-harm": 0.0008668366353958845,
+    "sexual/minors": 2.2307312974589877e-06,
+    "hate/threatening": 7.171267498051748e-05,
+    "violence/graphic": 0.00011876622011186555,
+    "self-harm/intent": 0.00030502653680741787,
+    "self-harm/instructions": 1.5344665371230803e-05,
+    "harassment/threatening": 0.008156237192451954,
+    "violence": 0.9286585450172424
+  }
+}
+```
+
+| **Category**           | **Flagged** | **Score**    |
+| ---------------------- | ----------- | ------------ |
+| Sexual                 | False       | 2.116e-05    |
+| Hate                   | False       | 0.000170     |
+| Harassment             | False       | 0.012143     |
+| Self-harm              | False       | 0.000867     |
+| Sexual/Minors          | False       | 2.231e-06    |
+| Hate/Threatening       | False       | 7.171e-05    |
+| Violence/Graphic       | False       | 0.000119     |
+| Self-harm/Intent       | False       | 0.000305     |
+| Self-harm/Instructions | False       | 1.534e-05    |
+| Harassment/Threatening | False       | 0.008156     |
+| Violence               | **True**    | **0.928659** |
+
+`falgged`被标记为`true`表示内容有潜在危害，且属于`violence`类型，得分为0.9286585450172424，表示死亡、暴力或身体伤害的内容。
+
+**测试没有危害的内容:**
+
+输入"Here's the plan.  We get the warhead, 
+and we hold the world ransom...
+...FOR ONE MILLION DOLLARS!"
+
+```python
+response = openai.Moderation.create(
+    input="""
+Here's the plan.  We get the warhead, 
+and we hold the world ransom...
+...FOR ONE MILLION DOLLARS!
+"""
+)
+moderation_output = response["results"][0]
+print(moderation_output)
+```
+
+```json
+{
+  "flagged": false,
+  "categories": {
+    "sexual": false,
+    "hate": false,
+    "harassment": false,
+    "self-harm": false,
+    "sexual/minors": false,
+    "hate/threatening": false,
+    "violence/graphic": false,
+    "self-harm/intent": false,
+    "self-harm/instructions": false,
+    "harassment/threatening": false,
+    "violence": false
+  },
+  "category_scores": {
+    "sexual": 1.5873460142756812e-05,
+    "hate": 0.004770653788000345,
+    "harassment": 0.018486635759472847,
+    "self-harm": 4.715678369393572e-05,
+    "sexual/minors": 4.112535680178553e-05,
+    "hate/threatening": 0.0006750317988917232,
+    "violence/graphic": 0.00035766453947871923,
+    "self-harm/intent": 5.8856653595285024e-06,
+    "self-harm/instructions": 5.216051945922118e-08,
+    "harassment/threatening": 0.02198261208832264,
+    "violence": 0.3782603144645691
+  }
+}
+```
+
+这句话是电影*Austin Powers: International Man of Mystery*中的台词。`falgged`为`False`表示没有潜在危害，但是`violence`分数显著偏高。
+
+### Prompt injections
 
