@@ -521,9 +521,84 @@ Response to user:#### The BlueWave Chromebook is actually $750 cheaper than the 
 
 Chaining Prompts（链式提示）将一个复杂任务分解为多个子任务，每个子任务用一个单独的prompt完成。按步骤执行，前一个prompt的输出成为后一个prompt的输入，形成链式结构。每个子任务专注于特定的功能或区间，使复杂问题更易于管理和扩展。
 
-对比Chain of Thought，Chaining Prompts有很多好处：
+相比Chain of Thought，Chaining Prompts主要具有以下优点：
 
+- **More Focused**：每个prompt仅处理一个子任务，避免对模型有过于宽泛的要求，提高成功率；
+- **Context Limitations**：避免超过prompt+response的最大token数限制；
+- **Reduced Costs**：减少prompt中token的数量，降低费用；
+- **Maintain state of workflow**：子任务分发，根据分类分发到不同的功能模块去处理；
+- **Easier to test**：方便测试，找出容易失败的环节；
+- **External tools**：调用外部工具，拓展AI系统的能力边界。
 
+### Example
 
+[Chaining Prompts](https://learn.deeplearning.ai/courses/chatgpt-building-system/lesson/6/chaining-prompts)
 
+用户想要询问有关smartx pro phone、fotosnap camera、tvs的产品信息：
 
+```python
+user_message_1 = f"""
+tell me about the smartx pro phone and \
+the fotosnap camera, the dslr one. \
+Also tell me about your tvs"""
+```
+
+本可以直接让模型输出答案，Chaining Prompts将其拆分为三个子任务：
+
+1. 使用模型提取`user_message_1`的相关产品和产品类型名称；
+2. 在产品列表中**检索**详细的产品信息`product_information_for_user_message_1`作为后续assistant message；
+3. 拼接`system_message`, `product_information_for_user_message_1`, `user_message_1`作为完整的prompt，输入模型生成最终答案。
+
+```python
+messages =  [{'role':'system','content': system_message},   
+             {'role':'user','content': user_message_1},
+             {'role':'assistant',
+              'content': f"""Relevant product information:\n\
+              {product_information_for_user_message_1}"""}]
+```
+
+在这个例子中，使用特定函数获取详细的产品和类别信息👇
+
+```python
+def get_product_by_name(name):
+    return products.get(name, None)
+
+def get_products_by_category(category):
+    return [product for product in products.values() if product["category"] == category]
+```
+
+实际上模型擅长调用各种不同的工具，即ChatGPT的插件。现实中，我们可以调用更高级的信息检索工具，如搜索引擎。
+
+## Check outputs
+
+在向用户展示模型的输出之前，对其质量、相关性和安全性进行严格的检查是非常重要的。有两种方式：
+
+- 使用[Moderation API](https://platform.openai.com/docs/guides/moderation)检查输出内容；
+- 使用额外的prompt对输出进行质量评估；
+
+[Check outputs](https://learn.deeplearning.ai/courses/chatgpt-building-system/lesson/7/check-outputs)
+
+## Build an End-to-End System
+
+搭建一个端到端问答系统，核心是Chaining Prompts，辅以输入输出检查。
+
+[Build an End-to-End System](https://learn.deeplearning.ai/courses/chatgpt-building-system/lesson/8/evaluation)
+
+- Step 1：使用[Moderation API](https://platform.openai.com/docs/guides/moderation)审核用户输入；
+- Step 2：若通过审核，则提取产品列表；
+- Step 3：若产品提取成功，则搜索产品详细信息；
+- Step 4：使用模型回答用户问题；
+- Step 5：使用[Moderation API](https://platform.openai.com/docs/guides/moderation)检查答案。
+
+## Evaluation
+
+对LLM的输出进行评估，分为两种情况：
+
+1. [只有一个“正确答案”时评估LLM的输出](https://learn.deeplearning.ai/courses/chatgpt-building-system/lesson/9/evaluation-part-i)：将LLM的输出与“正确答案”存入Python set，对比两个set是否相同；
+2. [没有单一“正确答案”时评估LLM的输出](https://learn.deeplearning.ai/courses/chatgpt-building-system/lesson/10/evaluation-part-ii)：使用LLM评估回答是否正确。
+   - 根据提取的产品信息，制定规则评估LLM对用户的回答；
+   - 根据“理想”/“专家”（人工生成）的答案，评估LLM对用户的答案。
+
+## Summary
+
+本课程首先介绍了LLM的工作机制，探讨了tokenizer的细节，并展示了语言模型的数据格式。然后，详细介绍了两种搭建AI系统的方式——Chain of Thought Reasoning（CoT，思维链）和Chaining Prompts（链式提示），以及如何对输入输出进行审查，并综合这些方面搭建负责任的AI系统。最后，探讨了如何评估LLM的输出，以便进行监控和改进。
