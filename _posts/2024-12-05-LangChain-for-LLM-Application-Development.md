@@ -46,7 +46,7 @@ pip install --upgrade langchain
 
 ### Model
 
-从`langchain.chat_models`导入OpenAI对话模型。LangChain也集成了厂商的聊天模型，如Anthropic、Google等，参见[Providers | 🦜️🔗 LangChain](https://python.langchain.com/docs/integrations/providers/)
+从`langchain.chat_models`导入OpenAI对话模型。LangChain也集成了其他厂商的模型，如Anthropic、Google等，参见[Providers | 🦜️🔗 LangChain](https://python.langchain.com/docs/integrations/providers/)
 
 ```python
 from langchain.chat_models import ChatOpenAI
@@ -234,3 +234,107 @@ output_dict = output_parser.parse(response.content)
 ```
 
 ![](../assets/images/llm_develop/langchain-7.png)
+
+## Memory
+
+语言模型是无状态的，用户每一次与语言模型的交互都是独立的，换句话说，语言模型并不记得到目前为止的历史对话。因此，在构建应用程序时，对话缺乏真正的连续性。LangChain的Memory模块可以将先前的对话嵌入到语言模型中，使对话具有连续性。
+
+LangChain具有多种Memory，本课程主要介绍其中四种：
+
+- **ConversationBufferMemory**
+- **ConversationBufferWindowMemory**
+- **ConversationTokenBufferMemory**
+- **ConversationSummaryMemory**
+
+更多Memory请参考API手册：[memory](https://api.python.langchain.com/en/latest/langchain/memory.html)
+
+### ConversationBufferMemory
+
+**导入Model, Chain和Memory**
+
+```python
+from langchain.chat_models import ChatOpenAI
+from langchain.chains import ConversationChain
+from langchain.memory import ConversationBufferMemory
+```
+
+**构建Conversation**
+
+```python
+llm = ChatOpenAI(temperature=0.0, model=llm_model)
+memory = ConversationBufferMemory()
+conversation = ConversationChain(
+    llm=llm, 
+    memory = memory,
+    verbose=True
+)
+```
+
+**调用`.predict()`启动对话**
+
+```python
+conversation.predict(input="Hi, my name is Andrew")
+conversation.predict(input="What is 1+1?")
+conversation.predict(input="What is my name?")
+```
+
+我们连续进行三轮对话，看看模型内部到底存储了些什么。
+
+![](../assets/images/llm_develop/langchain-8.png)
+
+模型存储了历史对话的所有内容，因此它知道用户的名字是Andrew。
+
+详情请看：[ConversationBufferMemory](https://api.python.langchain.com/en/latest/langchain/memory/langchain.memory.buffer.ConversationBufferMemory.html#langchain.memory.buffer.ConversationBufferMemory)
+
+### ConversationBufferWindowMemory
+
+[ConversationBufferWindowMemory](https://api.python.langchain.com/en/latest/langchain/memory/langchain.memory.buffer_window.ConversationBufferWindowMemory.html)只保留最近的一个窗口大小的对话。
+
+声明`k=1`的`ConversationBufferWindowMemory`
+
+```python
+from langchain.memory import ConversationBufferWindowMemory
+
+llm = ChatOpenAI(temperature=0.0, model=llm_model)
+memory = ConversationBufferWindowMemory(k=1)
+conversation = ConversationChain(
+    llm=llm, 
+    memory = memory,
+    verbose=False
+)
+```
+
+连续进行三轮对话
+
+```python
+conversation.predict(input="Hi, my name is Andrew")
+conversation.predict(input="What is 1+1?")
+conversation.predict(input="What is my name?")
+```
+
+![](../assets/images/llm_develop/langchain-9.png)
+
+我们设置窗口的大小为`k=1`，模型只存储最近的一轮对话，所以模型并不知道用户的名字，虽然用户已经告诉过它，但模型并没有存储。
+
+### ConversationTokenBufferMemory
+
+[ConversationTokenBufferMemory](https://api.python.langchain.com/en/latest/langchain/memory/langchain.memory.token_buffer.ConversationTokenBufferMemory.html)从token数量上限制Memory的大小，存储最近的`max_token_limit`个token。
+
+```python
+from langchain.memory import ConversationTokenBufferMemory
+
+memory = ConversationTokenBufferMemory(llm=llm, max_token_limit=50)
+```
+
+### ConversationSummaryMemory
+
+[ConversationSummaryMemory](https://api.python.langchain.com/en/latest/langchain/memory/langchain.memory.summary.ConversationSummaryMemory.html)存储最近历史对话的摘要，而不是原始对话。同样，摘要不能超过`max_token_limit`个token。
+
+```python
+from langchain.memory import ConversationSummaryBufferMemory
+
+memory = ConversationSummaryBufferMemory(llm=llm, max_token_limit=100)
+```
+
+
+
