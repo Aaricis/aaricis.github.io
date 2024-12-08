@@ -336,5 +336,350 @@ from langchain.memory import ConversationSummaryBufferMemory
 memory = ConversationSummaryBufferMemory(llm=llm, max_token_limit=100)
 ```
 
+## Chains
 
+[链（chain）](https://python.langchain.com/api_reference/langchain/chains.html)是LangChain中最重要的组件，将LLM和prompt结合在一起。我们可以将多个链连接在一起，在文本或者数据上进行一系列的操作。
+
+### LLMChain
+
+[LLMChain](https://python.langchain.com/api_reference/langchain/chains/langchain.chains.llm.LLMChain.html#langchain.chains.llm.LLMChain)是简单而强大的链，是其他复杂链的基础。
+
+**导入llm, prompt template, chain**
+
+```python
+from langchain.chat_models import ChatOpenAI
+from langchain.prompts import ChatPromptTemplate
+from langchain.chains import LLMChain
+```
+
+**创建llm和prompt template**
+
+```python
+llm = ChatOpenAI(temperature=0.9, model=llm_model)
+
+prompt = ChatPromptTemplate.from_template(
+    "What is the best name to describe \
+    a company that makes {product}?"
+)
+```
+
+**创建一个LLMChain实例，它将一个llm和一个prompt template结合起来**
+
+```python
+chain = LLMChain(llm=llm, prompt=prompt)
+```
+
+**调用LLMChain实例的run方法，将product作为输入传递给链，并执行链中定义的流程**
+
+```
+product = "Queen Size Sheet Set"
+chain.run(product)
+```
+
+### SimpleSequentialChain
+
+[SimpleSequentialChain](https://python.langchain.com/api_reference/langchain/chains/langchain.chains.sequential.SimpleSequentialChain.html#langchain.chains.sequential.SimpleSequentialChain)是顺序链最简单的形式，其中每个步骤都有一个单一的输入/输出，并且一个步骤的输出是下一个步骤的输入。
+
+**导入SimpleSequentialChain**
+
+```python
+from langchain.chains import SimpleSequentialChain
+```
+
+**创建两个LLMChain实例作为子链**
+
+```py
+llm = ChatOpenAI(temperature=0.9, model=llm_model)
+
+# prompt template 1
+first_prompt = ChatPromptTemplate.from_template(
+    "What is the best name to describe \
+    a company that makes {product}?"
+)
+
+# Chain 1
+chain_one = LLMChain(llm=llm, prompt=first_prompt)
+```
+
+```python
+# prompt template 2
+second_prompt = ChatPromptTemplate.from_template(
+    "Write a 20 words description for the following \
+    company:{company_name}"
+)
+# chain 2
+chain_two = LLMChain(llm=llm, prompt=second_prompt)
+```
+
+**使用SimpleSequentialChain将两个子链组装起来**
+
+```
+overall_simple_chain = SimpleSequentialChain(chains=[chain_one, chain_two],
+                                             verbose=True
+                                            )
+```
+
+**调用run方法执行流程**
+
+```python
+overall_simple_chain.run(product)
+```
+
+### SequentialChain
+
+[SequentialChain](https://python.langchain.com/api_reference/langchain/chains/langchain.chains.sequential.SequentialChain.html#langchain.chains.sequential.SequentialChain)是更通用的顺序链形式，允许多个输入和输出。
+
+**导入SequentialChain**
+
+```python
+from langchain.chains import SequentialChain
+```
+
+**创建四个LLMChain实例作为子链**
+
+```python
+llm = ChatOpenAI(temperature=0.9, model=llm_model)
+
+# prompt template 1: translate to english
+first_prompt = ChatPromptTemplate.from_template(
+    "Translate the following review to english:"
+    "\n\n{Review}"
+)
+# chain 1: input= Review and output= English_Review
+chain_one = LLMChain(llm=llm, prompt=first_prompt, 
+                     output_key="English_Review"
+                    )
+```
+
+```python
+second_prompt = ChatPromptTemplate.from_template(
+    "Can you summarize the following review in 1 sentence:"
+    "\n\n{English_Review}"
+)
+# chain 2: input= English_Review and output= summary
+chain_two = LLMChain(llm=llm, prompt=second_prompt, 
+                     output_key="summary"
+                    )
+```
+
+```python
+# prompt template 3: translate to english
+third_prompt = ChatPromptTemplate.from_template(
+    "What language is the following review:\n\n{Review}"
+)
+# chain 3: input= Review and output= language
+chain_three = LLMChain(llm=llm, prompt=third_prompt,
+                       output_key="language"
+                      )
+```
+
+```python
+# prompt template 4: follow up message
+fourth_prompt = ChatPromptTemplate.from_template(
+    "Write a follow up response to the following "
+    "summary in the specified language:"
+    "\n\nSummary: {summary}\n\nLanguage: {language}"
+)
+# chain 4: input= summary, language and output= followup_message
+chain_four = LLMChain(llm=llm, prompt=fourth_prompt,
+                      output_key="followup_message"
+                     )
+```
+
+每个子链都指定了`output_key`标识子链的输出，每个prompt中的占位符{xxx}表示该子链的输入。输入输出
+
+变量的名称要严格对应，否则会出现key error。
+
+**创建SequentialChain**
+
+```python
+# overall_chain: input= Review 
+# and output= English_Review,summary, followup_message
+overall_chain = SequentialChain(
+    chains=[chain_one, chain_two, chain_three, chain_four],
+    input_variables=["Review"],
+    output_variables=["English_Review", "summary","language","followup_message"],
+    verbose=True
+)
+```
+
+- **chains**：顺序链中包含的子链列表；
+- **input_variables**：输入变量列表，由于第一个子链的输入是`{Review}`，因此输入变量为`["Review"]`;
+- **output_variables**：输出变量列表。
+
+**执行顺序链**
+
+```python
+review = df.Review[5]
+overall_chain(review)
+```
+
+![](../assets/images/llm_develop/langchain-10.png)
+
+输出`output_variables`中指定的变量`["English_Review", "summary","language","followup_message"]`。
+
+### Router Chain
+
+Router Chain（路由链）允许根据输入的prompt从给定的一组链中动态选择一个预定义的子链。
+
+**定义一组prompt template**
+
+```python
+physics_template = """You are a very smart physics professor. \
+You are great at answering questions about physics in a concise\
+and easy to understand manner. \
+When you don't know the answer to a question you admit\
+that you don't know.
+
+Here is a question:
+{input}"""
+
+
+math_template = """You are a very good mathematician. \
+You are great at answering math questions. \
+You are so good because you are able to break down \
+hard problems into their component parts, 
+answer the component parts, and then put them together\
+to answer the broader question.
+
+Here is a question:
+{input}"""
+
+history_template = """You are a very good historian. \
+You have an excellent knowledge of and understanding of people,\
+events and contexts from a range of historical periods. \
+You have the ability to think, reflect, debate, discuss and \
+evaluate the past. You have a respect for historical evidence\
+and the ability to make use of it to support your explanations \
+and judgements.
+
+Here is a question:
+{input}"""
+
+
+computerscience_template = """ You are a successful computer scientist.\
+You have a passion for creativity, collaboration,\
+forward-thinking, confidence, strong problem-solving capabilities,\
+understanding of theories and algorithms, and excellent communication \
+skills. You are great at answering coding questions. \
+You are so good because you know how to solve a problem by \
+describing the solution in imperative steps \
+that a machine can easily interpret and you know how to \
+choose a solution that has a good balance between \
+time complexity and space complexity. 
+
+Here is a question:
+{input}"""
+```
+
+**对每个template进行命名和描述，封装成字典**
+
+```python
+prompt_infos = [
+    {
+        "name": "physics", 
+        "description": "Good for answering questions about physics", 
+        "prompt_template": physics_template
+    },
+    {
+        "name": "math", 
+        "description": "Good for answering math questions", 
+        "prompt_template": math_template
+    },
+    {
+        "name": "History", 
+        "description": "Good for answering history questions", 
+        "prompt_template": history_template
+    },
+    {
+        "name": "computer science", 
+        "description": "Good for answering computer science questions", 
+        "prompt_template": computerscience_template
+    }
+]
+```
+
+**导入MultiPromptChain， LLMRouterChain，RouterOutputParser，PromptTemplate**
+
+```python
+from langchain.chains.router import MultiPromptChain
+from langchain.chains.router.llm_router import LLMRouterChain,RouterOutputParser
+from langchain.prompts import PromptTemplate
+```
+
+**为`prompt_infos`中每个prompt创建子链，并加入`destination_chains`**
+
+```python
+destination_chains = {}
+for p_info in prompt_infos:
+    name = p_info["name"]
+    prompt_template = p_info["prompt_template"]
+    prompt = ChatPromptTemplate.from_template(template=prompt_template)
+    chain = LLMChain(llm=llm, prompt=prompt)
+    destination_chains[name] = chain  
+    
+destinations = [f"{p['name']}: {p['description']}" for p in prompt_infos]
+destinations_str = "\n".join(destinations)
+```
+
+**创建默认链，当无法决定调用哪一条子链时，调用默认链**
+
+```python
+default_prompt = ChatPromptTemplate.from_template("{input}")
+default_chain = LLMChain(llm=llm, prompt=default_prompt)
+```
+
+**构建路由链**
+
+```
+router_template = MULTI_PROMPT_ROUTER_TEMPLATE.format(
+    destinations=destinations_str
+)
+router_prompt = PromptTemplate(
+    template=router_template,
+    input_variables=["input"],
+    output_parser=RouterOutputParser(),
+)
+
+router_chain = LLMRouterChain.from_llm(llm, router_prompt)
+```
+
+`LLMRouterChain`根据输入动态地将任务路由到适当的子链，即不同的`LLMChain`。
+
+**封装总体链路**
+
+```python
+chain = MultiPromptChain(router_chain=router_chain, 
+                         destination_chains=destination_chains, 
+                         default_chain=default_chain, verbose=True
+                        )
+```
+
+`MultiPromptChain`允许根据不同的输入内容，动态选择不同的链路。
+
+**测试路由链**
+
+```python
+chain.run("What is black body radiation?") # 提问物理问题
+```
+
+```wiki
+# 被路由到物理链路
+> Entering new MultiPromptChain chain...
+physics: {'input': 'What is black body radiation?'}
+> Finished chain.
+"Black body radiation is the type of electromagnetic radiation that is emitted by a perfect black body, which is an idealized physical body that absorbs all incident electromagnetic radiation, regardless of frequency or angle of incidence. The radiation has a specific spectrum and intensity that depends only on the body's temperature, which is assumed to be uniform and constant. This phenomenon was first explained by Max Planck in 1900, and it is a foundational concept in quantum mechanics."
+```
+
+```python
+chain.run("Why does every cell in our body contain DNA?") # 提问生物问题
+```
+
+```wiki
+# 由于没有“生物”类的prompt template，因此被路由到默认链路。
+> Entering new MultiPromptChain chain...
+None: {'input': 'Why does every cell in our body contain DNA?'}
+> Finished chain.
+'DNA, or deoxyribonucleic acid, is the hereditary material in humans and almost all other organisms. It contains the instructions needed for an organism to develop, survive and reproduce. These instructions are found inside every cell, and are passed down from parents to their children.\n\nDNA is organized into structures called chromosomes and is divided into segments known as genes. Each gene contains a specific set of instructions that code for particular proteins that perform various functions in the body.\n\nTherefore, every cell in our body contains DNA because it is essential for life. It provides the instructions for the growth, development, function and reproduction of cells. Without DNA, our cells would not know what to do or how to function, and life as we know it would not exist.'
+```
 
