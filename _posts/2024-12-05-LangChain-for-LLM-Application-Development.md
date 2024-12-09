@@ -747,7 +747,7 @@ Embedding是指将词汇、短语、文档或其他类型的数据转换为实�
 
 图中句子1）2）都是关于动物的，它们具有相似的语义，embedding向量在空间中的位置比较接近。句子3）是关于汽车的，embedding向量与前两句话距离较远。
 
-### Vector Database
+#### Vector Database
 
 在前面的例子中，我们把`.csv`文档存入内存进行检索。对于大规模文档，内存是远远不够的，这时候就要用到Vector Database（向量数据库）。
 
@@ -757,9 +757,62 @@ Embedding是指将词汇、短语、文档或其他类型的数据转换为实�
 
 文档首先被划分为很多chunk（块），然后对每个chunk作embedding，最后将embedding向量和原本的chunk一并存入数据库。
 
-### 向文档提问
+#### 向文档提问
 
 系统将用户query转化为embedding向量，将该向量与向量数据库中的所有向量进行比较，找出前n个最相似的向量，将其原始chunk组合起来喂给LLM生成答案。
 
 ![](../assets/images/llm_develop/vector_database_2.png)
 
+接下来我们对之前的数据集作embedding，然后创建问答链（chain）对文档进行提问。
+
+```python
+# 加载文档
+from langchain.document_loaders import CSVLoader
+loader = CSVLoader(file_path=file)
+docs = loader.load()
+
+# 创建embeddings
+from langchain.embeddings import OpenAIEmbeddings
+embeddings = OpenAIEmbeddings()
+
+# 创建向量数据库
+db = DocArrayInMemorySearch.from_documents(
+    docs, 
+    embeddings
+)
+
+# 创建检索器
+retriever = db.as_retriever()
+
+# 加载llm模型
+llm = ChatOpenAI(temperature = 0.0, model='gpt-4')
+
+# 构建基于检索的问答系统
+qa_stuff = RetrievalQA.from_chain_type(
+    llm=llm, 
+    chain_type="stuff", 
+    retriever=retriever, 
+    verbose=True
+)
+
+query = "Please list all your shirts with sun protection in a table \
+in markdown and summarize each one."
+
+response = qa_stuff.run(query) 
+```
+
+```python
+display(Markdown(response))
+```
+
+![](../assets/images/llm_develop/langchain-12.png)
+
+`RetrievalQA`是LangChain中用于构建基于检索的问答系统的工具。它结合了文档检索和LLM的能力，为用户提供高效的知识问答体验。因为我们处理的文本较小，文本处理模式`chain_type`采用`stuff`，将检索到的文档直接拼接成一个字符串，一次性输入给LLM。另外，`chain_type`还有`map_reduce`, `refine`和`map_rerank`三种模式可选。
+
+![](../assets/images/llm_develop/additionalmethods.png)
+
+**map_reduce**：对每个检索到的chunk分别生成答案（map阶段)，然后对这些答案进行整合（reduce阶段）；
+
+**refine**：先总结子一个chunk，然后将总结内容和第二个chunk一起做总结，以此类推，直到总结完所有chunk；
+
+**map_rerank**：对每一个chunk进行总结并评分，选择评分最高的作为最终结果。
