@@ -683,3 +683,83 @@ None: {'input': 'Why does every cell in our body contain DNA?'}
 'DNA, or deoxyribonucleic acid, is the hereditary material in humans and almost all other organisms. It contains the instructions needed for an organism to develop, survive and reproduce. These instructions are found inside every cell, and are passed down from parents to their children.\n\nDNA is organized into structures called chromosomes and is divided into segments known as genes. Each gene contains a specific set of instructions that code for particular proteins that perform various functions in the body.\n\nTherefore, every cell in our body contains DNA because it is essential for life. It provides the instructions for the growth, development, function and reproduction of cells. Without DNA, our cells would not know what to do or how to function, and life as we know it would not exist.'
 ```
 
+## Question and Answer
+
+使用LLM构建基于文档的问答系统是目前最常见的场景之一。给定一段文本，使用LLM回答用户有关该文本的问题，可以帮助用户对文本有更深的理解或者提取用户关心的内容。该场景将LLM与外部数据结合起来，提高LLM使用的灵活性并扩大了适用范围。
+
+### LangChain: Q&A over Documents
+
+使用LangChain索引搭建基于文档的问答系统。
+
+**创建文档加载器**
+
+从`.csv`文档中读取数据，创建`CSVLoader`
+
+```python
+file = 'OutdoorClothingCatalog_1000.csv'
+loader = CSVLoader(file_path=file)
+```
+
+**创建索引**
+
+创建了文档加载器loder之后，还需要创建用于检索文档内容的索引`index`。
+
+`VectorstoreIndexCreator`用于创建和管理向量存储索引，便于对大量文档进行高效检索。它通过与向量数据库集成，帮助用户构建一个可查询的索引。我们使用的向量数据库是`DocArrayInMemorySearch`，它基于 DocArray 的内存存储功能，将整个文档以向量的形式存储在内存中，用于在本地内存中存储和检索嵌入向量，适合小规模或原型化的语义搜索任务。最后调用`.from_loaders`方法从`loader`创建索引。
+
+```python
+from langchain.indexes import VectorstoreIndexCreator
+
+index = VectorstoreIndexCreator(
+    vectorstore_cls=DocArrayInMemorySearch
+).from_loaders([loader])
+```
+
+接下来直接使用索引对文档进行问答：
+
+```python
+query ="Please list all your shirts with sun protection \
+in a table in markdown and summarize each one."
+
+llm_replacement_model = OpenAI(temperature=0, 
+                               model='gpt-3.5-turbo-instruct')
+
+response = index.query(query, 
+                       llm = llm_replacement_model)
+                       
+display(Markdown(response))
+```
+
+![](../assets/images/llm_develop/langchain-11.png)
+
+llm返回4件具有防晒功能的衬衫，并且对每一件衬衫都进行了总结，最后以markdown表格格式输出，满足`query`要求。
+
+### Step By Step
+
+使用`index.query()`方法只用一行代码就可以实现文档问答功能，本节我们一起来探索其背后的原理。
+
+LLM一次只能处理几千个单词，当遇到较大规模的文档时，如何使LLM回答关于该文档的所有问题？这就需要’embeddings‘和‘vector database’，我们先介绍’embeddings‘和‘vector database’的概念，然后再创建文档问答系统step by step。
+
+#### Embeddings
+
+Embedding是指将词汇、短语、文档或其他类型的数据转换为实数向量的过程。相似的词或概念在向量空间中彼此接近。
+
+![](../assets/images/llm_develop/embeddings.png)
+
+图中句子1）2）都是关于动物的，它们具有相似的语义，embedding向量在空间中的位置比较接近。句子3）是关于汽车的，embedding向量与前两句话距离较远。
+
+### Vector Database
+
+在前面的例子中，我们把`.csv`文档存入内存进行检索。对于大规模文档，内存是远远不够的，这时候就要用到Vector Database（向量数据库）。
+
+![](../assets/images/llm_develop/vector_database_1.png)
+
+**文档是如何存储在向量数据库的？**
+
+文档首先被划分为很多chunk（块），然后对每个chunk作embedding，最后将embedding向量和原本的chunk一并存入数据库。
+
+### 向文档提问
+
+系统将用户query转化为embedding向量，将该向量与向量数据库中的所有向量进行比较，找出前n个最相似的向量，将其原始chunk组合起来喂给LLM生成答案。
+
+![](../assets/images/llm_develop/vector_database_2.png)
+
