@@ -809,10 +809,153 @@ display(Markdown(response))
 
 `RetrievalQA`是LangChain中用于构建基于检索的问答系统的工具。它结合了文档检索和LLM的能力，为用户提供高效的知识问答体验。因为我们处理的文本较小，文本处理模式`chain_type`采用`stuff`，将检索到的文档直接拼接成一个字符串，一次性输入给LLM。另外，`chain_type`还有`map_reduce`, `refine`和`map_rerank`三种模式可选。
 
-![](../assets/images/llm_develop/additionalmethods.png)
+![.](../assets/images/llm_develop/additionalmethods.png)
 
 **map_reduce**：对每个检索到的chunk分别生成答案（map阶段)，然后对这些答案进行整合（reduce阶段）；
 
 **refine**：先总结子一个chunk，然后将总结内容和第二个chunk一起做总结，以此类推，直到总结完所有chunk；
 
 **map_rerank**：对每一个chunk进行总结并评分，选择评分最高的作为最终结果。
+
+## Evaluation
+
+评估是检验LLM问答质量的关键。当你改变了系统的实现，例如更换了LLM、改变使用向量数据库的策略，或者修改了系统参数，你该如何知道系统是变好了还好变差了——我们需要对它进行评估。
+
+上一节已经使用LangChain构建了基于文档的问答系统，该系统的正确性到底如何呢？本节以评估基于文档的问答系统为例，介绍评估LLM系统的工具和方法。
+
+**基本思想**：使用LLM和链本身评估其他LLM、链和应用程序。
+
+### Create Q&A application
+
+创建Q&A系统作为评估的LLM应用
+
+```python
+from langchain.chains import RetrievalQA
+from langchain.chat_models import ChatOpenAI
+from langchain.document_loaders import CSVLoader
+from langchain.indexes import VectorstoreIndexCreator
+from langchain.vectorstores import DocArrayInMemorySearch
+
+file = 'OutdoorClothingCatalog_1000.csv'
+loader = CSVLoader(file_path=file)
+data = loader.load()
+
+index = VectorstoreIndexCreator(
+    vectorstore_cls=DocArrayInMemorySearch
+).from_loaders([loader])
+
+llm = ChatOpenAI(temperature = 0.0, model=llm_model)
+qa = RetrievalQA.from_chain_type(
+    llm=llm, 
+    chain_type="stuff", 
+    retriever=index.vectorstore.as_retriever(), 
+    verbose=True,
+    chain_type_kwargs = {
+        "document_separator": "<<<<>>>>>"
+    }
+)
+```
+
+### 创建问答测试集
+
+根据文档'OutdoorClothingCatalog_1000.csv'内容，创建query-answer 测试对作为ground truth。
+
+```python
+examples = [
+    {
+        "query": "Do the Cozy Comfort Pullover Set\
+        have side pockets?",
+        "answer": "Yes"
+    },
+    {
+        "query": "What collection is the Ultra-Lofty \
+        850 Stretch Down Hooded Jacket from?",
+        "answer": "The DownTek collection"
+    }
+]
+```
+
+可以手动编写，更推荐的方法是使用LLM+Chain生成ground truth query-answer 测试对。
+
+```python
+from langchain.evaluation.qa import QAGenerateChain
+
+# 使用QAGenerateChain和ChatOpenAI创建问答生成链
+example_gen_chain = QAGenerateChain.from_llm(ChatOpenAI(model=llm_model))
+
+# 取data中前5个数据生成问答对
+new_examples = example_gen_chain.apply_and_parse(
+    [{"doc": t} for t in data[:5]]
+)
+```
+
+```python
+new_examples[0]
+
+'''
+{'query': " According to the document, what is the approximate weight of the Women's Campside Oxfords per pair?\n\n",
+ 'answer': " The approximate weight of the Women's Campside Oxfords per pair is 1 lb. 1 oz."}
+ '''
+```
+
+### LLM assisted evaluation
+
+```python
+# 使用apply方法为examples中的测试问题生成答案
+predictions = qa.apply(examples)
+```
+
+**使用LLM评估答案相似性**
+
+`examples`作为ground truth，`predictions`为LLM生成的答案。使用`QAEvalChain`评估predictions和examples的相似性。
+
+```python
+from langchain.evaluation.qa import QAEvalChain
+
+llm = ChatOpenAI(temperature=0, model=llm_model)
+
+# 创建评估链
+eval_chain = QAEvalChain.from_llm(llm)
+
+# 评估examples和predictions的相似性
+graded_outputs = eval_chain.evaluate(examples, predictions)
+```
+
+查看评估结果
+
+```python
+for i, eg in enumerate(examples):
+    print(f"Example {i}:")
+    print("Question: " + predictions[i]['query'])
+    print("Real Answer: " + predictions[i]['answer'])
+    print("Predicted Answer: " + predictions[i]['result'])
+    print("Predicted Grade: " + graded_outputs[i]['text'])
+    print()
+    
+'''
+Example 0:
+Question: Do the Cozy Comfort Pullover Set        have side pockets?
+Real Answer: Yes
+Predicted Answer: Yes, the Cozy Comfort Pullover Set does have side pockets.
+Predicted Grade: CORRECT
+
+Example 1:
+Question: What collection is the Ultra-Lofty         850 Stretch Down Hooded Jacket from?
+Real Answer: The DownTek collection
+Predicted Answer: The Ultra-Lofty 850 Stretch Down Hooded Jacket is from the DownTek collection.
+Predicted Grade: CORRECT
+
+Example 2:
+Question:  According to the document, what is the approximate weight of the Women's Campside Oxfords per pair?
+
+
+Real Answer:  The approximate weight of the Women's Campside Oxfords per pair is 1 lb. 1 oz.
+Predicted Answer: The approximate weight of the Women's Campside Oxfords per pair is 1 lb. 1 oz.
+Predicted Grade: CORRECT
+
+......
+
+'''
+```
+
+最后我们理一下思路。首先，我们使用LLM自动创建了query-answer 测试集`examples`，接着我们让LLM回答测试集中的问题生成回复`predictions`。接下来将测试集`examples`和回复`predictions`进行比对，这个过程也由LLM完成。整个流程中LLM既当“裁判”又当“球员”，但是它们来自不同的chain。
