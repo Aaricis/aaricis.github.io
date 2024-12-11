@@ -931,8 +931,9 @@ for i, eg in enumerate(examples):
     print("Predicted Answer: " + predictions[i]['result'])
     print("Predicted Grade: " + graded_outputs[i]['text'])
     print()
-    
-'''
+```
+
+```wiki
 Example 0:
 Question: Do the Cozy Comfort Pullover Set        have side pockets?
 Real Answer: Yes
@@ -954,8 +955,239 @@ Predicted Answer: The approximate weight of the Women's Campside Oxfords per pai
 Predicted Grade: CORRECT
 
 ......
-
-'''
 ```
 
+
+
 最后我们理一下思路。首先，我们使用LLM自动创建了query-answer 测试集`examples`，接着我们让LLM回答测试集中的问题生成回复`predictions`。接下来将测试集`examples`和回复`predictions`进行比对，这个过程也由LLM完成。整个流程中LLM既当“裁判”又当“球员”，但是它们来自不同的chain。
+
+## Agents
+
+人们通常认为LLM是一个知识库，因为它看过很多训练资料，可以回答你的问题。LLM的能力远不止于此，它其实是一个“推理引擎”，根据用户信息回答问题、内容推理甚至做决定。本节主要介绍如何创建并使用Agent，如何使用Agent调用外部工具以及如何创建自己的工具供Agent调用。
+
+### Built-in LangChain tools
+
+创建使用LangChain内置工具“llm-math”和"wikipedia"的Agent完成某些任务。“llm-math”具有作数学运算的能力，LLM调用该工具解答数学问题。"wikipedia"是搜索维基百科的工具，LLM连接维基百科进行搜索查询。
+
+```python
+from langchain.agents.agent_toolkits import create_python_agent
+from langchain.agents import load_tools, initialize_agent
+from langchain.agents import AgentType
+from langchain.tools.python.tool import PythonREPLTool
+from langchain.python import PythonREPL
+from langchain.chat_models import ChatOpenAI
+
+# 创建LLM
+llm = ChatOpenAI(temperature=0, model=llm_model)
+
+# 定义工具
+tools = load_tools(["llm-math","wikipedia"], llm=llm)
+
+# 创建Agent
+agent= initialize_agent(
+    tools, 
+    llm, 
+    agent=AgentType.CHAT_ZERO_SHOT_REACT_DESCRIPTION,
+    handle_parsing_errors=True,
+    verbose = True)
+```
+
+使用`initialize_agent`初始化代理`agent`，传入模型`llm`和工具列表`tools`。
+
+**`agent=AgentType.CHAT_ZERO_SHOT_REACT_DESCRIPTION`**:
+
+- `AgentType` 是定义智能代理类型的枚举。
+- `CHAT_ZERO_SHOT_REACT_DESCRIPTION`类型表示：
+  - 代理以对话形式与用户交互。
+  - 使用 “Zero-Shot” 方法：无需特别训练，直接依赖语言模型理解任务。
+  - 采用 ReAct 框架：结合推理 (Reasoning) 和行动 (Acting) 的方式完成任务。
+- 此代理会根据工具描述推断其功能，并选择合适的工具。
+
+**`handle_parsing_errors=True`**:
+
+- 启用错误处理机制。如果代理在解析用户输入或工具输出时发生错误，将优雅地处理错误，而不会导致程序崩溃。
+
+**agent回答数学问题**
+
+```python
+agent("What is the 25% of 300?")
+```
+
+````wiki
+> Entering new AgentExecutor chain...
+Thought: We can use the calculator tool to find 25% of 300.
+Action:
+```
+{
+  "action": "Calculator",
+  "action_input": "25% of 300"
+}
+```
+Observation: Answer: 75.0
+Thought:Final Answer: 75.0
+
+> Finished chain.
+{'input': 'What is the 25% of 300?', 'output': '75.0'}
+````
+
+**agent查询维基百科**
+
+```python
+question = "Tom M. Mitchell is an American computer scientist \
+and the Founders University Professor at Carnegie Mellon University (CMU)\
+what book did he write?"
+result = agent(question) 
+```
+
+````wiki
+> Entering new AgentExecutor chain...
+Thought: I can use Wikipedia to find out which book Tom M. Mitchell wrote.
+Action:
+```
+{
+  "action": "Wikipedia",
+  "action_input": "Tom M. Mitchell"
+}
+```
+Observation: Page: Tom M. Mitchell
+Summary: Tom Michael Mitchell (born August 9, 1951) is an American computer scientist and the Founders University Professor at Carnegie Mellon University (CMU). He is a founder and former chair of the Machine Learning Department at CMU. Mitchell is known for his contributions to the advancement of machine learning, artificial intelligence, and cognitive neuroscience and is the author of the textbook Machine Learning. He is a member of the United States National Academy of Engineering since 2010. He is also a Fellow of the American Academy of Arts and Sciences, the American Association for the Advancement of Science and a Fellow and past president of the Association for the Advancement of Artificial Intelligence. In October 2018, Mitchell was appointed as the Interim Dean of the School of Computer Science at Carnegie Mellon.
+
+Page: Ensemble learning
+Summary: In statistics and machine learning, ensemble methods use multiple learning algorithms to obtain better predictive performance than could be obtained from any of the constituent learning algorithms alone.
+Unlike a statistical ensemble in statistical mechanics, which is usually infinite, a machine learning ensemble consists of only a concrete finite set of alternative models, but typically allows for much more flexible structure to exist among those alternatives.
+
+
+Thought:I have found that Tom M. Mitchell wrote the textbook "Machine Learning."
+
+Final Answer: Tom M. Mitchell wrote the book "Machine Learning."
+
+> Finished chain.
+````
+
+>可以观察到，代理解决问题有一个固定的流程：
+>
+>Thought
+>
+>Action
+>
+>Observation
+>
+>Thought
+>
+>Final Answer
+
+### Python Agent
+
+```python
+# 创建python agent
+agent = create_python_agent(
+    llm,
+    tool=PythonREPLTool(),
+    verbose=True
+)
+```
+
+`create_python_agent`创建能够运行python代码的agent。`tool`使用`PythonREPLTool()`工具，允许代理执行任何python代码，该工具创建了一个临时的Python解释器环境。
+
+让agent对人名进行排序：
+
+```python
+customer_list = [["Harrison", "Chase"], 
+                 ["Lang", "Chain"],
+                 ["Dolly", "Too"],
+                 ["Elle", "Elem"], 
+                 ["Geoff","Fusion"], 
+                 ["Trance","Former"],
+                 ["Jen","Ayai"]
+                ]
+
+agent.run(f"""Sort these customers by \
+last name and then first name \
+and print the output: {customer_list}""") 
+```
+
+```wiki
+> Entering new AgentExecutor chain...
+We can use the sorted() function in Python to sort the list of customers based on last name first and then first name.
+Action: Use the sorted() function
+Action Input: sorted([['Harrison', 'Chase'], ['Lang', 'Chain'], ['Dolly', 'Too'], ['Elle', 'Elem'], ['Geoff', 'Fusion'], ['Trance', 'Former'], ['Jen', 'Ayai']], key=lambda x: (x[1], x[0]))
+Observation: Use the sorted() function is not a valid tool, try another one.
+Thought:We can use the sorted() function with a custom key function to sort the list of customers based on last name first and then first name.
+Action: Use the sorted() function with a custom key function
+Action Input: sorted([['Harrison', 'Chase'], ['Lang', 'Chain'], ['Dolly', 'Too'], ['Elle', 'Elem'], ['Geoff', 'Fusion'], ['Trance', 'Former'], ['Jen', 'Ayai']], key=lambda x: (x[1], x[0]))
+Observation: Use the sorted() function with a custom key function is not a valid tool, try another one.
+Thought:We can use the sorted() function with a lambda function to sort the list of customers based on last name first and then first name.
+Action: Use the sorted() function with a lambda function
+Action Input: sorted([['Harrison', 'Chase'], ['Lang', 'Chain'], ['Dolly', 'Too'], ['Elle', 'Elem'], ['Geoff', 'Fusion'], ['Trance', 'Former'], ['Jen', 'Ayai']], key=lambda x: (x[1], x[0]))
+Observation: Use the sorted() function with a lambda function is not a valid tool, try another one.
+Thought:We can use the sorted() function with a lambda function to sort the list of customers based on last name first and then first name.
+Action: Use the sorted() function with a lambda function
+Action Input: sorted([['Harrison', 'Chase'], ['Lang', 'Chain'], ['Dolly', 'Too'], ['Elle', 'Elem'], ['Geoff', 'Fusion'], ['Trance', 'Former'], ['Jen', 'Ayai']], key=lambda x: (x[1], x[0]))
+Observation: Use the sorted() function with a lambda function is not a valid tool, try another one.
+Thought:We can use the sorted() function with a lambda function to sort the list of customers based on last name first and then first name.
+Action: Use the sorted() function with a lambda function
+Action Input: sorted([['Harrison', 'Chase'], ['Lang', 'Chain'], ['Dolly', 'Too'], ['Elle', 'Elem'], ['Geoff', 'Fusion'], ['Trance', 'Former'], ['Jen', 'Ayai']], key=lambda x: (x[1], x[0]))
+Observation: Use the sorted() function with a lambda function is not a valid tool, try another one.
+Thought:We can use the sorted() function with a lambda function to sort the list of customers based on last name first and then first name.
+Action: Use the sorted() function with a lambda function
+Action Input: sorted([['Harrison', 'Chase'], ['Lang', 'Chain'], ['Dolly', 'Too'], ['Elle', 'Elem'], ['Geoff', 'Fusion'], ['Trance', 'Former'], ['Jen', 'Ayai']], key=lambda x: (x[1], x[0]))
+Observation: Use the sorted() function with a lambda function is not a valid tool, try another one.
+Thought:I now know the final answer
+Final Answer: [['Jen', 'Ayai'], ['Harrison', 'Chase'], ['Lang', 'Chain'], ['Elle', 'Elem'], ['Trance', 'Former'], ['Geoff', 'Fusion'], ['Dolly', 'Too']]
+```
+
+python agent重复多次执行（`Action`、`Action Input`、`Observation`、`Thought`）最终得到`Final Answer`。
+
+### Define your own tool
+
+agent调用自定义工具。自定义`time`函数获取当前日期，当我们询问当前日期时，agent会调用`time`函数。注意：`time`函数需被`@tool`装饰。
+
+```python
+from langchain.agents import tool
+from datetime import date
+
+@tool
+def time(text: str) -> str:
+    """Returns todays date, use this for any \
+    questions related to knowing todays date. \
+    The input should always be an empty string, \
+    and this function will always return todays \
+    date - any date mathmatics should occur \
+    outside this function."""
+    return str(date.today())
+
+agent= initialize_agent(
+    [time], 
+    llm, 
+    agent=AgentType.CHAT_ZERO_SHOT_REACT_DESCRIPTION,
+    handle_parsing_errors=True,
+    verbose = True)
+```
+
+**询问今天的日期**
+
+```python
+try:
+    result = agent("whats the date today?") 
+except: 
+    print("exception on external access")
+```
+
+````wiki
+> Entering new AgentExecutor chain...
+Thought: I can use the `time` tool to find out today's date.
+Action:
+```
+{
+  "action": "time",
+  "action_input": ""
+}
+```
+
+Observation: 2024-12-11
+Thought:Final Answer: 2024-12-11
+````
+
+## Conclusion
+
+本课程首先介绍了LangChain的基本概念和基础组件（Models, Prompts, Parsers, Chains），然后利用这些组件搭建Q&A系统并对其进行评估，最后介绍了Agent的用法。
