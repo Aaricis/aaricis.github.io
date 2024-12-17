@@ -208,3 +208,226 @@ text_splitter.split_text(text1)
 ['foo', ' bar', ' b', 'az', 'zy', 'foo']
 ```
 
+### MarkdownHeaderTextSplitter
+
+[MarkdownHeaderTextSplitter](https://python.langchain.com/api_reference/text_splitters/markdown/langchain_text_splitters.markdown.MarkdownHeaderTextSplitter.html)根据指定的标题分割Markdown文档。
+
+```python
+from langchain.document_loaders import NotionDirectoryLoader
+from langchain.text_splitter import MarkdownHeaderTextSplitter
+
+markdown_document = """# Title\n\n \
+## Chapter 1\n\n \
+Hi this is Jim\n\n Hi this is Joe\n\n \
+### Section \n\n \
+Hi this is Lance \n\n 
+## Chapter 2\n\n \
+Hi this is Molly"""
+
+headers_to_split_on = [
+    ("#", "Header 1"),
+    ("##", "Header 2"),
+    ("###", "Header 3"),
+]
+
+markdown_splitter = MarkdownHeaderTextSplitter(
+    headers_to_split_on=headers_to_split_on
+)
+md_header_splits = markdown_splitter.split_text(markdown_document)
+```
+
+```python
+[Document(page_content='Hi this is Jim  \nHi this is Joe', metadata={'Header 1': 'Title', 'Header 2': 'Chapter 1'}),
+ Document(page_content='Hi this is Lance', metadata={'Header 1': 'Title', 'Header 2': 'Chapter 1', 'Header 3': 'Section'}),
+ Document(page_content='Hi this is Molly', metadata={'Header 1': 'Title', 'Header 2': 'Chapter 2'})]
+```
+
+MarkdownHeaderTextSplitter将同一标题下的文本放在同一个chunk，文本对应的标题信息被存储在chunk的metadata中。
+
+MarkdownHeaderTextSplitter基于文档结构感知上下文进行分割，自然的将语义相关的文本划分在同一个chunk。跟Markdown类似，HTML、JSON、Code也有内在的文档结构，可被按照结构分割。
+
+- JSON：[RecursiveJsonSplitter](https://python.langchain.com/docs/how_to/recursive_json_splitter/)，按对象或数组元素分割；
+
+- HTML：[HTMLHeaderTextSplitter](https://python.langchain.com/docs/how_to/HTML_header_metadata_splitter/)，使用标签分割；
+
+- Code：[CodeSplitter](https://python.langchain.com/docs/how_to/code_splitter/)，按函数、类或逻辑块分割；
+
+## Vectorstores and Embeddings
+
+![](../assets/images/llm_develop/L3-Vectorstores_embeddings.png)
+
+文档分割之后来到向量嵌入和存储环节。本节主要介绍向量嵌入和存储的基本概念，指出向量数据库相似性搜索可能出现的失败模式。向量嵌入和存储的基本概念参见[Embeddings](https://aaricis.github.io/posts/LangChain-for-LLM-Application-Development/#embeddings)和[Vectorstores](https://aaricis.github.io/posts/LangChain-for-LLM-Application-Development/#vector-database)。
+
+### Document Loading and Splitting
+
+我们加载吴恩达老师机器学习课程cs229的pdf讲义并进行分割。
+
+```python
+from langchain.document_loaders import PyPDFLoader
+
+# Load PDF
+loaders = [
+    # Duplicate documents on purpose - messy data
+    PyPDFLoader("docs/cs229_lectures/MachineLearning-Lecture01.pdf"),
+    PyPDFLoader("docs/cs229_lectures/MachineLearning-Lecture01.pdf"),
+    PyPDFLoader("docs/cs229_lectures/MachineLearning-Lecture02.pdf"),
+    PyPDFLoader("docs/cs229_lectures/MachineLearning-Lecture03.pdf")
+]
+docs = []
+for loader in loaders:
+    docs.extend(loader.load())
+    
+# Split
+from langchain.text_splitter import RecursiveCharacterTextSplitter
+text_splitter = RecursiveCharacterTextSplitter(
+    chunk_size = 1500,
+    chunk_overlap = 150
+)
+
+splits = text_splitter.split_documents(docs)
+```
+
+### Embeddings
+
+```python
+from langchain.embeddings.openai import OpenAIEmbeddings
+embedding = OpenAIEmbeddings()
+```
+
+### Vectorstores
+
+加载向量数据库[Chroma](https://www.trychroma.com/)。Chroma是一个开源的AI原生嵌入式数据库，主要用于存储和查询向量数据。
+
+```python
+# ! pip install chromadb
+
+from langchain.vectorstores import Chroma
+
+persist_directory = 'docs/chroma/'
+!rm -rf ./docs/chroma  # remove old database files if any
+vectordb = Chroma.from_documents(
+    documents=splits,
+    embedding=embedding,
+    persist_directory=persist_directory
+)
+```
+
+### Failure modes
+
+```python
+question = "what did they say about matlab?"
+docs = vectordb.similarity_search(question,k=5)
+```
+
+要求向量数据库搜索5个相关的答案。由于加载数据时加载了两次'docs/cs229_lectures/MachineLearning-Lecture01.pdf'，因此当用户问题与'docs/cs229_lectures/MachineLearning-Lecture01.pdf'内容相关时，向量数据库会返回重复答案。
+
+```python
+docs[0]
+```
+
+```wiki
+Document(page_content='those homeworks will be done in either MATLA B or in Octave, which is sort of — I \nknow some people call it a free ve rsion of MATLAB, which it sort  of is, sort of isn\'t.  \nSo I guess for those of you that haven\'t s een MATLAB before, and I know most of you \nhave, MATLAB is I guess part of the programming language that makes it very easy to write codes using matrices, to write code for numerical routines, to move data around, to \nplot data. And it\'s sort of an extremely easy to  learn tool to use for implementing a lot of \nlearning algorithms.  \nAnd in case some of you want to work on your  own home computer or something if you \ndon\'t have a MATLAB license, for the purposes of  this class, there\'s also — [inaudible] \nwrite that down [inaudible] MATLAB — there\' s also a software package called Octave \nthat you can download for free off the Internet. And it has somewhat fewer features than MATLAB, but it\'s free, and for the purposes of  this class, it will work for just about \neverything.  \nSo actually I, well, so yeah, just a side comment for those of you that haven\'t seen \nMATLAB before I guess, once a colleague of mine at a different university, not at \nStanford, actually teaches another machine l earning course. He\'s taught it for many years. \nSo one day, he was in his office, and an old student of his from, lik e, ten years ago came \ninto his office and he said, "Oh, professo r, professor, thank you so much for your', metadata={'source': 'docs/cs229_lectures/MachineLearning-Lecture01.pdf', 'page': 8})
+```
+
+```python
+docs[1]
+```
+
+```wiki
+Document(page_content='those homeworks will be done in either MATLA B or in Octave, which is sort of — I \nknow some people call it a free ve rsion of MATLAB, which it sort  of is, sort of isn\'t.  \nSo I guess for those of you that haven\'t s een MATLAB before, and I know most of you \nhave, MATLAB is I guess part of the programming language that makes it very easy to write codes using matrices, to write code for numerical routines, to move data around, to \nplot data. And it\'s sort of an extremely easy to  learn tool to use for implementing a lot of \nlearning algorithms.  \nAnd in case some of you want to work on your  own home computer or something if you \ndon\'t have a MATLAB license, for the purposes of  this class, there\'s also — [inaudible] \nwrite that down [inaudible] MATLAB — there\' s also a software package called Octave \nthat you can download for free off the Internet. And it has somewhat fewer features than MATLAB, but it\'s free, and for the purposes of  this class, it will work for just about \neverything.  \nSo actually I, well, so yeah, just a side comment for those of you that haven\'t seen \nMATLAB before I guess, once a colleague of mine at a different university, not at \nStanford, actually teaches another machine l earning course. He\'s taught it for many years. \nSo one day, he was in his office, and an old student of his from, lik e, ten years ago came \ninto his office and he said, "Oh, professo r, professor, thank you so much for your', metadata={'source': 'docs/cs229_lectures/MachineLearning-Lecture01.pdf', 'page': 8})
+```
+
+docs[0]和docs[1]内容完全一致。
+
+另一个失败的场景，要求只在第三篇文档中搜索答案：
+
+```python
+question = "what did they say about regression in the third lecture?"
+docs = vectordb.similarity_search(question,k=5)
+for doc in docs:
+    print(doc.metadata)
+```
+
+```wiki
+{'source': 'docs/cs229_lectures/MachineLearning-Lecture03.pdf', 'page': 0}
+{'source': 'docs/cs229_lectures/MachineLearning-Lecture03.pdf', 'page': 14}
+{'source': 'docs/cs229_lectures/MachineLearning-Lecture02.pdf', 'page': 0}
+{'source': 'docs/cs229_lectures/MachineLearning-Lecture03.pdf', 'page': 6}
+{'source': 'docs/cs229_lectures/MachineLearning-Lecture01.pdf', 'page': 8}
+```
+
+返回答案中包含第一篇（Lecture01）和第二篇（Lecture02）文档的内容，不满足问题要求。
+
+## Retrieval
+
+![](../assets/images/llm_develop/L4-Retrieval.png)
+
+检索（Retrieval）是检索增强生成（Retrieval Augmented Generation，RAG）的核心，指根据用户的问题去向量数据库中搜索与问题相关的文档内容。当我们访问和查询向量数据库时可能会运用到以下技术：
+
+- 基本语义相似度（Basic semantic similarity）
+- 最大边际相关性（Maximum marginal relevance，MMR）
+- 过滤元数据
+- LLM辅助检索
+
+本节将介绍几种检索方法，以及解决前述’Failure modes‘的技巧。
+
+### Similarity Search
+
+```python
+from langchain.vectorstores import Chroma
+from langchain.embeddings.openai import OpenAIEmbeddings
+
+embedding = OpenAIEmbeddings()
+texts = [
+    """The Amanita phalloides has a large and imposing epigeous (aboveground) fruiting body (basidiocarp).""",
+    """A mushroom with a large fruiting body is the Amanita phalloides. Some varieties are all-white.""",
+    """A. phalloides, a.k.a Death Cap, is one of the most poisonous of all known mushrooms.""",
+]
+smalldb = Chroma.from_texts(texts, embedding=embedding)
+```
+
+```python
+question = "Tell me about all-white mushrooms with large fruiting bodies"
+smalldb.similarity_search(question, k=2)
+```
+
+```wiki
+Document(page_content='A mushroom with a large fruiting body is the Amanita phalloides. Some varieties are all-white.', metadata={}),
+ Document(page_content='The Amanita phalloides has a large and imposing epigeous (aboveground) fruiting body (basidiocarp).', metadata={})
+```
+
+相似性搜索`similarity_search`返回两个文档，是`texts`的第一句和第二句。它们都与用户问题有关，且含义非常相近，其实只返回其中一句足以满足要求。
+
+### Addressing Diversity: Maximum marginal relevance
+
+Similarity Search可以返回与问题相关的文档，但是不能避免返回的文档中存在语义重复，造成资源浪费。我们使用MMR作相同的检索：
+
+```python
+smalldb.max_marginal_relevance_search(question,k=2, fetch_k=3)
+```
+
+```wiki
+Document(page_content='A mushroom with a large fruiting body is the Amanita phalloides. Some varieties are all-white.', metadata={}),
+ Document(page_content='A. phalloides, a.k.a Death Cap, is one of the most poisonous of all known mushrooms.', metadata={})
+```
+
+`max_marginal_relevance_search`返回了`texts`的第一句和第三句。第一句与用户问题强相关，第三句相关性较弱但增加了答案的多样性。
+
+最大边际相关（Maximum Marginal Relevance）是实现多样性检索的常用算法。
+
+![](../assets/images/llm_develop/mmr.png)
+
+MMR平衡结果的相关性（relevance）和多样性（diversity），以避免返回内容冗余的结果。MMR 的公式如下：
+$$
+MMR(D_i) = \lambda \cdot Rel(D_i, Q) - (1 - \lambda) \cdot \mathop{max}\limits_{D_j\in S}Sim(D_i, D_j)
+$$
+其中：
+
+- $D_i$：候选文档或结果；
+- $Q$：查询；
+- $S$：已选文档的集合；
+- $Rel(D_i, Q)$：文档$D_i$与查询$Q$的相关性分数；
+- $Sim(D_i, D_j)$：文档$D_i$与集合$S$中文档$D_j$的相似度；
+- $\lambda$：平衡相关性和多样性的超参数，范围$[0, 1]$。
+
+LangChain `max_marginal_relevance_search`函数使用MMR算法初步检索`fetch_k`个文档，选择前`k`个返回。
