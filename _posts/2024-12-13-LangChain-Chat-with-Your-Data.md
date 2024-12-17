@@ -1,5 +1,5 @@
 ---
-title: LangChain: Chat with Your Data
+title: LangChain Chat with Your Data
 date: 2024-12-13 16:40:00 +/-8
 categories: [LLM, Andrew Ng]
 tags: [openai, software develop, langchain, rag]     # TAG names should always be lowercase
@@ -556,4 +556,10 @@ vectordb并不是LangChain唯一的检索器，LangChain还提供了其他检索
 
 ## Question Answering
 
+本节介绍检索增强生成（Retrieval Augmented Generation，RAG）的最后一个阶段Output。
+
 ![](../assets/images/llm_develop/L5-QnA.png)
+
+在Output阶段，我们会将检索（Retrieval）阶段获得的chunk，连同用户的问题一起喂给LLM，最后由LLM返回最后的答案。
+
+![](../assets/images/llm_develop/L5-structure.png)
