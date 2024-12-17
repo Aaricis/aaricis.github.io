@@ -339,7 +339,7 @@ Document(page_content='those homeworks will be done in either MATLA B or in Octa
 
 docs[0]和docs[1]内容完全一致。
 
-另一个失败的场景，要求只在第三篇文档中搜索答案：
+**另一个失败的场景**，要求只在Lecture03中搜索答案：
 
 ```python
 question = "what did they say about regression in the third lecture?"
@@ -356,7 +356,7 @@ for doc in docs:
 {'source': 'docs/cs229_lectures/MachineLearning-Lecture01.pdf', 'page': 8}
 ```
 
-返回答案中包含第一篇（Lecture01）和第二篇（Lecture02）文档的内容，不满足问题要求。
+返回答案中包含Lecture01和Lecture02的内容，不满足问题要求。
 
 ## Retrieval
 
@@ -431,3 +431,129 @@ $$
 - $\lambda$：平衡相关性和多样性的超参数，范围$[0, 1]$。
 
 LangChain `max_marginal_relevance_search`函数使用MMR算法初步检索`fetch_k`个文档，选择前`k`个返回。
+
+[Failure modes](#failure-modes)中使用`similarity_search`搜索cs229课程pdf，向量数据库的返回中包含重复答案。我们使用`max_marginal_relevance_search`来消除重复内容，提升回答的多样性。
+
+```python
+question = "what did they say about matlab?"
+docs_mmr = vectordb.max_marginal_relevance_search(question,k=3)
+```
+
+### Addressing Specificity: working with metadata
+
+[Failure modes](#failure-modes)中要求只在Lecture03中搜索答案，但是结果中额外包含Lecture01和Lecture02的内容。我们可以通过过滤元数据的方式实现精准搜索，从而解决这个问题。
+
+```python
+question = "what did they say about regression in the third lecture?"
+
+docs = vectordb.similarity_search(
+    question,
+    k=3,
+    filter={"source":"docs/cs229_lectures/MachineLearning-Lecture03.pdf"}
+)
+
+for d in docs:
+    print(d.metadata)
+```
+
+```wiki
+{'source': 'docs/cs229_lectures/MachineLearning-Lecture03.pdf', 'page': 0}
+{'source': 'docs/cs229_lectures/MachineLearning-Lecture03.pdf', 'page': 14}
+{'source': 'docs/cs229_lectures/MachineLearning-Lecture03.pdf', 'page': 4}
+```
+
+设置`filter`过滤条件后，返回的三个答案都是基于Lecture03的。
+
+### Addressing Specificity: working with metadata using self-query retriever
+
+`filter`中的过滤条件是手动设置的，有没有方法可以准确识别问题中的语义从而实现元数据自动过滤呢？LangChain提供[SelfQueryRetriever](https://python.langchain.com/docs/how_to/self_query/)解决这个问题，它使用LLM提取query和filter。
+
+```python
+from langchain.llms import OpenAI
+from langchain.retrievers.self_query.base import SelfQueryRetriever
+from langchain.chains.query_constructor.base import AttributeInfo
+
+# 定义元数据过滤条件
+metadata_field_info = [
+    AttributeInfo(
+        name="source",
+        description="The lecture the chunk is from, should be one of `docs/cs229_lectures/MachineLearning-Lecture01.pdf`, `docs/cs229_lectures/MachineLearning-Lecture02.pdf`, or `docs/cs229_lectures/MachineLearning-Lecture03.pdf`",
+        type="string",
+    ),
+    AttributeInfo(
+        name="page",
+        description="The page from the lecture",
+        type="integer",
+    ),
+]
+
+document_content_description = "Lecture notes"
+llm = OpenAI(model='gpt-3.5-turbo-instruct', temperature=0)
+retriever = SelfQueryRetriever.from_llm(
+    llm,
+    vectordb,
+    document_content_description,
+    metadata_field_info,
+    verbose=True
+)
+```
+
+`metadata_field_info`参数用于描述元数据中的字段及其类型和含义。这个参数的设置对检索器如何解析查询并匹配元数据非常关键。根据`metadata_field_info`信息，LLM会自动从用户问题中提取query和filter，然后向量数据库基于这两项去搜索相关内容。
+
+```python
+question = "what did they say about regression in the third lecture?"
+docs = retriever.get_relevant_documents(question)
+```
+
+LLM提取query和filter，query='regression'来自用户问题，filter是LLM根据metadata_field_info和用户问题设定的过滤条件。
+
+```
+query='regression' filter=Comparison(comparator=<Comparator.EQ: 'eq'>, attribute='source', value='docs/cs229_lectures/MachineLearning-Lecture03.pdf') limit=None
+```
+
+```python
+for d in docs:
+    print(d.metadata)
+```
+
+```
+{'source': 'docs/cs229_lectures/MachineLearning-Lecture03.pdf', 'page': 14}
+{'source': 'docs/cs229_lectures/MachineLearning-Lecture03.pdf', 'page': 0}
+{'source': 'docs/cs229_lectures/MachineLearning-Lecture03.pdf', 'page': 10}
+{'source': 'docs/cs229_lectures/MachineLearning-Lecture03.pdf', 'page': 10}
+```
+
+返回内容均来自Lecture03，满足要求。
+
+### Additional tricks: compression
+
+另一种提高检索文档质量的方法是压缩。向量数据库会返回与问题相关的chunk中的所有内容，其中包含大量不相关的信息。LangChain提供[ContextualCompressionRetriever](https://api.python.langchain.com/en/latest/retrievers/langchain.retrievers.contextual_compression.ContextualCompressionRetriever.html)对返回的完整chunk进行压缩，提取与用户问题相关的内容。可以有效提升输出质量，减少计算资源的浪费。
+
+![](../assets/images/llm_develop/L4-compression_llm.png)
+
+```python
+from langchain.retrievers import ContextualCompressionRetriever
+from langchain.retrievers.document_compressors import LLMChainExtractor
+
+# Wrap our vectorstore
+llm = OpenAI(temperature=0, model="gpt-3.5-turbo-instruct")
+compressor = LLMChainExtractor.from_llm(llm)
+
+compression_retriever = ContextualCompressionRetriever(
+    base_compressor=compressor,
+    base_retriever=vectordb.as_retriever()
+)
+
+question = "what did they say about matlab?"
+compressed_docs = compression_retriever.get_relevant_documents(question)
+```
+
+我们定义了压缩器`LLMChainExtractor`，负责从向量数据库返回的chunk中提取信息。`ContextualCompressionRetriever`有两个参数，一个是压缩器`LLMChainExtractor`实例，另一个是vectordb检索器。
+
+### Other types of retrieval
+
+vectordb并不是LangChain唯一的检索器，LangChain还提供了其他检索文档的方式，例如TF-IDF、SVM。
+
+## Question Answering
+
+![](../assets/images/llm_develop/L5-QnA.png)
