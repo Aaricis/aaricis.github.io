@@ -703,3 +703,45 @@ memory = ConversationBufferMemory(
 
 ### ConversationalRetrievalChain
 
+`ConversationalRetrievalChain`结合了上下文管理和基于检索的问答，旨在处理包含聊天历史记录的对话链路。
+
+```python
+from langchain.chains import ConversationalRetrievalChain
+retriever=vectordb.as_retriever()
+qa = ConversationalRetrievalChain.from_llm(
+    llm,
+    retriever=retriever,
+    memory=memory
+)
+```
+
+```python
+question = "Is probability a class topic?" # 概率是一门课的主题吗？
+result = qa({"question": question})
+result['answer']
+```
+
+```wiki
+Yes, probability is a class topic in the course being described. The instructor assumes familiarity with basic probability and statistics.
+```
+
+```python
+question = "why are those prerequesites needed?" # 为什么需要先修课程？
+result = qa({"question": question})
+```
+
+```wiki
+Familiarity with basic probability and statistics is assumed as prerequisites for the course because the course will involve concepts and applications that rely on probability theory and statistical analysis. Understanding these fundamental concepts is essential for grasping the more advanced topics that will be covered in the course.
+```
+
+第一个问题是有关“probability”的，紧接着第二个回答解释了“probability”为什么是先修课程。两个问答在内容上是连贯的，因为ConversationalRetrievalChain回答第二个问题时已经知道第一个问题的上下文。
+
+### Create a chatbot
+
+结合Panel和Param搭建RAG系统，实现可交互的Chatbot：
+
+- [详见](https://learn.deeplearning.ai/courses/langchain-chat-with-your-data/lesson/7/chat)
+
+## Conclusion
+
+本课程介绍了如何使用LangChain访问私有数据，并建立个性化的问答系统。按照RAG工作流的顺序，分别讨论了：文档加载、文档分割、存储、检索和输出五大环节。最后创建了一个完全功能的、端到端的聊天机器人。
