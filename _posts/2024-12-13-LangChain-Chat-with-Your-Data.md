@@ -563,3 +563,143 @@ vectordb并不是LangChain唯一的检索器，LangChain还提供了其他检索
 在Output阶段，我们会将检索（Retrieval）阶段获得的chunk，连同用户的问题一起喂给LLM，最后由LLM返回最后的答案。
 
 ![](../assets/images/llm_develop/L5-structure.png)
+
+### RetrievalQA chain
+
+加载向量数据库、设置用户问题、创建llm。
+
+```python
+from langchain.vectorstores import Chroma
+from langchain.embeddings.openai import OpenAIEmbeddings
+persist_directory = 'docs/chroma/'
+embedding = OpenAIEmbeddings()
+vectordb = Chroma(persist_directory=persist_directory, embedding_function=embedding)
+
+question = "What are major topics for this class?"
+
+from langchain.chat_models import ChatOpenAI
+llm = ChatOpenAI(model_name=llm_name, temperature=0)
+```
+
+使用`RetrievalQA`和LLM创建一个问答链。
+
+```python
+from langchain.chains import RetrievalQA
+
+qa_chain = RetrievalQA.from_chain_type(
+    llm,
+    retriever=vectordb.as_retriever()
+)
+```
+
+使用问答链处理一个查询问题，并返回结果。
+
+```python
+result = qa_chain({"query": question})
+result["result"]
+```
+
+```wiki
+The major topics for this class include machine learning, statistics, and algebra. Additionally, there will be discussions on extensions of the material covered in the main lectures.
+```
+
+为了让RetrievalQA给出格式化答案，我们创建一个prompt，告诉LLM应该输出什么样的答案。
+
+```python
+from langchain.prompts import PromptTemplate
+
+# Build prompt
+template = """Use the following pieces of context to answer the question at the end. If you don't know the answer, just say that you don't know, don't try to make up an answer. Use three sentences maximum. Keep the answer as concise as possible. Always say "thanks for asking!" at the end of the answer. 
+{context}
+Question: {question}
+Helpful Answer:"""
+QA_CHAIN_PROMPT = PromptTemplate.from_template(template)
+```
+
+```python
+# Run chain
+qa_chain = RetrievalQA.from_chain_type(
+    llm,
+    retriever=vectordb.as_retriever(),
+    return_source_documents=True,
+    chain_type_kwargs={"prompt": QA_CHAIN_PROMPT}
+)
+```
+
+`return_source_documents=True`：这个参数指示 `RetrievalQA` 实例在返回结果时，除了答案外，还应该返回源文档。
+
+`chain_type_kwargs`：一个字典，包含了传递给特定链类型的额外参数。
+
+- `"prompt": QA_CHAIN_PROMPT`：在这个字典中，`"prompt"` 键指定了用于问答链的提示模板。`QA_CHAIN_PROMPT` 包含了用于生成答案的提示文本。
+
+```python
+question = "Is probability a class topic?"
+result = qa_chain({"query": question})
+result["result"]
+```
+
+```wiki
+'Yes, probability is a class topic as the instructor assumes familiarity with basic probability and statistics. Thanks for asking!'
+```
+
+`qa_chain`根据prompt template给出简洁的答案，并且按照prompt template的要求在末尾加了结束语“Thanks for asking!”。
+
+### RetrievalQA chain types
+
+RetrievalQA的`chain_type`参数默认为`stuff`，还有`map_reduce`, `refine`和`map_rerank`三种模式可选。
+
+详见[chain_type]([LangChain for LLM Application Development | Kaige Zhang](https://aaricis.github.io/posts/LangChain-for-LLM-Application-Development/#向文档提问))
+
+### RetrievalQA limitations
+
+`qa_chain`不能保存对话历史记录。
+
+```python
+qa_chain = RetrievalQA.from_chain_type(
+    llm,
+    retriever=vectordb.as_retriever()
+)
+```
+
+首先提问“Is probability a class topic?”，`qa_chain`给出回答。
+
+```python
+question = "Is probability a class topic?"
+result = qa_chain({"query": question})
+result["result"]
+```
+
+```wiki
+Yes, probability is a class topic in the course being described. The instructor assumes familiarity with basic probability and statistics.
+```
+
+然后接着追问"why are those prerequesites needed?"，`qa_chain`给出与'probability'毫不相干的回答，可见`qa_chain`对之前的对话完全没有记忆。
+
+```python
+question = "why are those prerequesites needed?"
+result = qa_chain({"query": question})
+result["result"]
+```
+
+```wiki
+The prerequisites for the class are needed because the course assumes that all students have a basic knowledge of computer science and computer skills. This foundational knowledge is essential for understanding the concepts and materials covered in the class, such as big-O notation and basic computer principles.
+```
+
+## Chat
+
+至此我们已经构建了一个问答机器人，实现了对数据的问答功能。但美中不足的是，仅仅通过RetrievalQA构建的问答机器人只能回答当前问题，无法参考上下文给出答案，因为它没有记忆。本节就来解决这个问题，通过给机器人添加记忆（Memory）模块，赋予它记忆力，实现真正的连贯性聊天。
+
+### Memory
+
+使用`ConversationBufferMemory`创建记忆模块。LangChain memory介绍详见[memory]([LangChain for LLM Application Development | Kaige Zhang](https://aaricis.github.io/posts/LangChain-for-LLM-Application-Development/#memory))。
+
+```python
+from langchain.memory import ConversationBufferMemory
+memory = ConversationBufferMemory(
+    memory_key="chat_history",
+    return_messages=True
+)
+```
+
+### ConversationalRetrievalChain
+
