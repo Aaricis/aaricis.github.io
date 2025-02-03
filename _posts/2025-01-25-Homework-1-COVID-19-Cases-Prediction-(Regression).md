@@ -1,7 +1,7 @@
 ---
-title: Homework 1: COVID-19 Cases Prediction (Regression)
+title: COVID19 Cases Prediction (Regression)
 date: 2024-12-28 16:40:00 +/-8
-categories: [Machine Learning, Deep Learning]
+categories: [Machine Learning]
 tags: [Hung-yi Lee]     # TAG names should always be lowercase
 ---
 
@@ -17,7 +17,7 @@ tags: [Hung-yi Lee]     # TAG names should always be lowercase
 
 ## 思路&Code
 
-双过Stong Baseline:
+【2021版本】双过Stong Baseline:
 
 https://github.com/Aaricis/Hung-yi-Lee-ML2021/blob/main/ML2021_HW1.ipynb
 
