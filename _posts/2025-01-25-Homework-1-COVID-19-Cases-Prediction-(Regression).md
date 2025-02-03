@@ -1,5 +1,5 @@
 ---
-title: [MACHINE LEARNING 2021 SPRING]Homework 1: COVID-19 Cases Prediction (Regression)
+title: Homework 1: COVID-19 Cases Prediction (Regression)
 date: 2024-12-28 16:40:00 +/-8
 categories: [Machine Learning, Deep Learning]
 tags: [Hung-yi Lee]     # TAG names should always be lowercase
