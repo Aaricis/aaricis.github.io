@@ -1,5 +1,5 @@
 ---
-title: COVID19 Cases Prediction (Regression)
+title: 李宏毅-ML2022-HW1-COVID19 Cases Prediction (Regression)
 date: 2024-12-28 16:40:00 +/-8
 categories: [Machine Learning 2022]
 tags: [Hung-yi Lee]     # TAG names should always be lowercase
