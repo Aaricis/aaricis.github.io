@@ -205,7 +205,7 @@ https://github.com/Aaricis/Hung-yi-Lee-ML2022/releases/tag/v0.1
 
 [Metric评价指标-机器翻译指标之BLEU - 知乎](https://zhuanlan.zhihu.com/p/350596071)
 
-[BLEU Score(吴恩达)](http://link.zhihu.com/?target=https%3A//www.bilibili.com/video/BV1F4411y7BA%3Fp%3D28%26vd_source%3D4916fa2b08e3354fac9a50cf705eed4a)
+[BLEU Score(吴恩达)](https://www.bilibili.com/video/BV1F4411y7BA/?p=28&vd_source=4916fa2b08e3354fac9a50cf705eed4a)
 
 [Positional Encoding in Transformers - GeeksforGeeks](https://www.geeksforgeeks.org/positional-encoding-in-transformers/)
 
