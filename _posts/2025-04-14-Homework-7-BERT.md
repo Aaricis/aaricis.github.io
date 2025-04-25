@@ -135,25 +135,25 @@ Private score: 0.83857
     Score: 0.78217  Private score: 0.78894
     ```python
     def evaluate(data, output):
-    answer = ''
-    max_prob = float('-inf')
-    num_of_windows = data[0].shape[1]
+        answer = ''
+        max_prob = float('-inf')
+        num_of_windows = data[0].shape[1]
     
-    for k in range(num_of_windows):
-        start_prob, start_index = torch.max(output.start_logits[k], dim=0)
-        end_prob, end_index = torch.max(output.end_logits[k], dim=0)
+        for k in range(num_of_windows):
+            start_prob, start_index = torch.max(output.start_logits[k], dim=0)
+            end_prob, end_index = torch.max(output.end_logits[k], dim=0)
     
-        # 跳过非法区间
-        if end_index < start_index:
-            continue
+            # 跳过非法区间
+            if end_index < start_index:
+                continue
     
-        prob = start_prob + end_prob
+            prob = start_prob + end_prob
     
-        if prob > max_prob:
-            max_prob = prob
-            answer = tokenizer.decode(data[0][0][k][start_index : end_index + 1])
+            if prob > max_prob:
+                max_prob = prob
+                answer = tokenizer.decode(data[0][0][k][start_index : end_index + 1])
     
-    return answer.replace(' ', '')
+        return answer.replace(' ', '')
     ```
   - (3)枚举所有合法的区间，找出最大概率的那一对，并限制答案长度不超过`max_answer_length=30`。
   
