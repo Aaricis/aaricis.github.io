@@ -424,7 +424,7 @@ Filter Explanation 中我們觀察了哪些情況？(選 2 個選項) What have 
 
 ![](../assets/images/Hung-yi_Lee_ML2022/hw9_embedding_analysis_0.PNG)
 
-### Q28.1 Embedding Analysis 
+#### Q28.1 Embedding Analysis 
 
 0.2 分數 
 
@@ -433,7 +433,7 @@ Filter Explanation 中我們觀察了哪些情況？(選 2 個選項) What have 
 - [ ] 歐⽒距離 / Euclidean distance 
 - [x] 餘弦相似度 / Cosine similarity
 
-## Q28.2 Embedding Analysis 
+#### Q28.2 Embedding Analysis 
 
 0.2 分數 
 
