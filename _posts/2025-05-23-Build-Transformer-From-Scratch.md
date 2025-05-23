@@ -649,8 +649,8 @@ visualize_positional_encoding()
 ```
 
 
-![png](%E5%A4%8D%E7%8E%B0Transformer_files/%E5%A4%8D%E7%8E%B0Transformer_31_0.png)
-    
+![](../assets/images/transformer_pos.png)
+  
 
 
 ## 输入处理
