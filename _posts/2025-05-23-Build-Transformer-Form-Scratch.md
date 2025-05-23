@@ -1,6 +1,6 @@
 ---
 title: Build Transformer Form Scratch
-date: 2025-05-23 15:07:00 +/-8
+date: 2025-05-23 17:30:00 +/-8
 categories: [LLM]
 tags: [Transformer]     # TAG names should always be lowercase
 math: true
@@ -147,8 +147,6 @@ class MultiHeadAttention(nn.Module):
     out = self.fc_out(concat_out)
 
     return out
-
-
 ```
 
 ## Position-wise Feed-Forward Networks
@@ -197,7 +195,7 @@ class PositionwiseFeedForward(nn.Module):
 > Deep Residual Learning for Image Recognition | [arXiv 1512.03385](https://arxiv.org/pdf/1512.03385)
 
 > **简单，但有效**
-残差连接是一种跳跃连接（Skip Connection），它将层的输入直接加到输出上，公式如下：
+> 残差连接是一种跳跃连接（Skip Connection），它将层的输入直接加到输出上，公式如下：
 
 $$
 \text{Output} = \text{SubLayer}(x) + x
@@ -283,6 +281,7 @@ Q：BatchNorm和LayerNorm的区别
   - LayerNorm基于每个样本的所有特征，针对样本自身（行内所有特征）进行归一化。即在每一行（一个样本的$feature_size$个特征）上计算均值和方差。
     
     - 对第$i$行（样本）计算均值和方差：
+    
     $$
     \mu_i = \frac{1}{\text{feature\_size}} \sum_{j=1}^{\text{feature\_size}} x_{i,j}, \quad
     \sigma^2_i = \frac{1}{\text{feature\_size}} \sum_{j=1}^{\text{feature\_size}} (x_{i,j} - \mu_i)^2
@@ -307,8 +306,6 @@ $$
 $$
 
 其中，$\gamma$和$\beta$是可学习的参数，用于进一步调整归一化后的输出。
-
-
 
 ```python
 class LayerNorm(nn.Module):
@@ -758,8 +755,6 @@ print(attn_scores)
 masked_scores = attn_scores.masked_fill(~mask, float('-inf'))  # 将填充位置设为 -inf
 print(masked_scores)
 ```
-
-
 ### 序列掩码（Sequence Mask）
 序列掩码用于在解码器中屏蔽未来的位置，防止模型在预测下一个词时“偷看”答案，在解码器中使用。
 
@@ -1245,4 +1240,3 @@ print(model)
         (norm): LayerNorm((512,), eps=1e-05, elementwise_affine=True)
       )
     )
-
