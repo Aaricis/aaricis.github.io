@@ -45,16 +45,13 @@ Unzip real_or_drawing.zip, the data format is as below:
 
 ### Simple Basline(acc ≥ 0.44616)
 
-Score: 0.49334
-
-Private score: 0.49798
+Score: 0.49334 Private score: 0.49798
 
 跑一遍Sample Code。
 
 ### Medium Baseline(acc≥0.64576)
 
-Score: 0.75684
-Private score: 0.75626
+Score: 0.75684 Private score: 0.75626
 
 根据助教提示，我们调整`lamb`的值并训练更多epoch。实作中随着epoch的增加动态调整`lamb`的值，总共训练800个epoch。
 
@@ -108,8 +105,7 @@ max_epochs = 1000
 
 ### Boss Baseline (acc ≥0.80640)
 
-Score: 0.82852
-Private score: 0.82592
+Score: 0.82852 Private score: 0.82592
 
 根据助教建议采用其他更高级的对抗训练方法，实作中使用DIRT-T。
 
@@ -158,15 +154,19 @@ $$
 
 #### 训练流程总结
 1. 预训练阶段（VADA）：
-  - 用源域标签和目标域无标签训练一个基本模型；
 
-  - 输出初步决策边界。
+     - 用源域标签和目标域无标签训练一个基本模型；
+
+
+     - 输出初步决策边界。
 
 2. 边界精化阶段（DIRT-T）：
 
-  - 使用KL散度和目标域输入自训练，微调边界；
+     - 使用KL散度和目标域输入自训练，微调边界；
 
-  - 每一步用之前的模型作为 teacher，进行迭代 refinement。
+
+     - 每一步用之前的模型作为 teacher，进行迭代 refinement。
+
 
 实作中借鉴了DIRT-T的思想，将Strong Baseline获得的模型充当VADA模型（不是严格的VADA模型），DIRT-T训练阶段使用Teacher-Student策略进行UDA训练阶段中目标域的自监督微调。代码如下：
 
