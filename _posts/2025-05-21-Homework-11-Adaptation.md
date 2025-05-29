@@ -129,9 +129,11 @@ DIRT-T来自论文[*A DIRT-T Approach to Unsupervised Domain Adaptation*](https:
 VADA利用VAT（Virtual Adversarial Training）和条件熵最小化，增强模型对目标域输入结构的敏感性。
 
 损失函数：
+
 $$
 L_{VADA} = L_{src}+\lambda_{t}\cdot L_{VAT}^t+\lambda_{c}\cdot L_{ent}^t + \lambda_d \cdot L_{align}
 $$
+
 其中：
 - $L_{src}$：源域交叉熵；
 - $L_{VAT}^t$：目标域VAT损失（扰动一致性）；
@@ -142,11 +144,13 @@ $$
 在VADA基础上，DIRT-T更进一步专注于目标域自训练。
 
 损失函数：
+
 $$
 L_{DIRT-T} = D_{KL}(f_\theta(x_t)||f_{\hat \theta}(x_t)) + \lambda \cdot L_{VAT}^t
 $$
 
 其中：
+
 - $f_\theta$：当前学生模型；
 - $f_{\hat \theta}$：当前教师模型（前一轮模型或者EMA）；
 - $KL$：鼓励当前模型保持一致性，但允许微调决策边界；
