@@ -332,7 +332,7 @@ LunarLander任务的动作空间是离散的，并且DQN非常适合离散动作
 
 Deep Q-Network(DQN)是深度强化学习(DRL)中的一种经典算法，由DeepMind在2013年提出。核心思想是用神经网络近似Q值函数，解决了传统Q-Learning在高维状态空间下的局限性。
 
-1. Q-Learning简述
+##### Q-Learning简述
 
 Q-Learning的目标是学习状态-动作值函数$Q(s, a)$，表示在状态$s$采取动作$a$后的预期回报。更新公式如下：
 
@@ -341,7 +341,7 @@ $$
 Q(s_t, a_t) ← Q(s_t, a_t) + \alpha (r_t + \gamma \mathop{\max}\limits_{a^{\prime}} Q(s_{t+1}, a^{\prime}) - Q(s_t, a_t))
 $$
 
-2. Deep Q-Network（DQN）核心思想
+##### Deep Q-Network（DQN）核心思想
 
 DQN使用一个神经网络来逼近Q函数：
 
@@ -361,7 +361,7 @@ $$
 
 其中$\theta^{-}$是目标网络的参数，是$\theta$的一个延迟副本。
 
-3. 核心机制
+##### 核心机制
 
 DQN的核心机制有：经验回放（Experience Replay）、目标网络（Target Network）、 $\epsilon - Greedy$策略
 
