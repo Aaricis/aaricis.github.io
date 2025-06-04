@@ -66,9 +66,13 @@ Score: 0.75684 Private score: 0.75626
 
 $\lambda$渐进式增长，训练初期$\lambda$较小，后期逐渐增大（模拟“先学习分类，再适应领域”）。
 - 公式：
+
+  
 $$
 \lambda_p = \frac{2}{1 + e^{-\gamma . p}} - 1
 $$
+
+
 其中，$p$为训练进度，$p = 当前epoch/总epoch$，$\gamma$控制增长速率，如$\gamma = 10$。
 
 ```python
