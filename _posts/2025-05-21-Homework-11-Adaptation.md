@@ -91,17 +91,13 @@ for epoch in range(max_epochs):
 
 ### Strong Baseline(acc≥0.75840)
 
-Score: 0.77962
-
-Private score: 0.78094
+Score: 0.77962 Private score: 0.78094
 
 在Medium Baseline基础上训练更多epoch，实作中训练1000个epoch，其余不变。
 
 ```python
 max_epochs = 1000
 ```
-
-
 
 ### Boss Baseline (acc ≥0.80640)
 
