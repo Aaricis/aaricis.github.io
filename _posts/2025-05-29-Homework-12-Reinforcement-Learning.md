@@ -133,10 +133,10 @@ Actor-Critic算法是强化学习中的一种混合框架，结合了策略梯�
 #### 训练流程
 1. 采样交互：
 
-  与环境交互，得到$(s_t, a_t, r_t, s_{t+1})$;
+  	与环境交互，得到$(s_t, a_t, r_t, s_{t+1})$;
 2. 计算TD误差或Advantage:
 
-  使用Critic来评估当前策略的表现，两种方式：
+  	使用Critic来评估当前策略的表现，两种方式：
   - TD-error（Temporal Difference）：
 
     
@@ -152,15 +152,21 @@ Actor-Critic算法是强化学习中的一种混合框架，结合了策略梯�
     $$
 3. 更新Critic（值函数）：
 
-  使用TD误差训练Critic的参数，最小化：
+   
+
+   使用TD误差训练Critic的参数，最小化：
+
+   
 
 
 $$
   L_{critic} = (r_t + \gamma V(s_{t+1}) - V(s_t))^2
 $$
+
+
 4. 更新Actor（策略网络）：
 
-  使用策略梯度，最大化优势：
+  	使用策略梯度，最大化优势：
 
 
 $$
@@ -337,7 +343,9 @@ $$
 
 2. Deep Q-Network（DQN）核心思想
 
-DQN使用一个神经网络来逼近Q函数：
+
+
+​	DQN使用一个神经网络来逼近Q函数：
 
 
 $$
@@ -353,7 +361,9 @@ $$
 $$
 L(\theta) = (r + \gamma \mathop{\max}\limits_{a^{\prime}} Q(s^{\prime}, a^{\prime}; \theta^{-}) - Q(s, a; \theta))^2
 $$
-其中$\theta^{-}$是目标网络的参数，是$\theta$的一个延迟副本。
+​	
+
+​	其中$\theta^{-}$是目标网络的参数，是$\theta$的一个延迟副本。
 
 3. 核心机制
 DQN的核心机制有：
