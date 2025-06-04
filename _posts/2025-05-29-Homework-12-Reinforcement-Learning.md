@@ -138,29 +138,39 @@ Actor-Critic算法是强化学习中的一种混合框架，结合了策略梯�
 
   使用Critic来评估当前策略的表现，两种方式：
   - TD-error（Temporal Difference）：
+
+    
     $$
     \delta = r_t + \gamma V(s_{t+1}) - V(s_t)
     $$
+
   - Advantage（优势函数）：
+    
+    
     $$
     A(s_t, a_t) = Q(s_t, a_t) - V(s_t) \approx \delta
     $$
 3. 更新Critic（值函数）：
 
   使用TD误差训练Critic的参数，最小化：
+
+
 $$
   L_{critic} = (r_t + \gamma V(s_{t+1}) - V(s_t))^2
 $$
 4. 更新Actor（策略网络）：
 
   使用策略梯度，最大化优势：
+
+
 $$
   L_{actor} = -log\pi(a_t|s_t;\theta) \cdot A(s_t, a_t)
 $$
 
 #### 代码实现
 ##### Actor
-```pyhton
+
+```python
 class Actor(nn.Module):
   def __init__(self, state_size=8, action_size=4, hidden_size=64):
     super().__init__()
@@ -178,7 +188,6 @@ class Actor(nn.Module):
   def forward(self, state):
     # Returing probability of each action
     return self.fc(state)
-
 ```
 
 ##### Critic
@@ -320,6 +329,8 @@ Deep Q-Network(DQN)是深度强化学习(DRL)中的一种经典算法，由DeepM
 1. Q-Learning简述
 
 Q-Learning的目标是学习状态-动作值函数$Q(s, a)$，表示在状态$s$采取动作$a$后的预期回报。更新公式如下：
+
+
 $$
 Q(s_t, a_t) ← Q(s_t, a_t) + \alpha (r_t + \gamma \mathop{\max}\limits_{a^{\prime}} Q(s_{t+1}, a^{\prime}) - Q(s_t, a_t))
 $$
@@ -327,13 +338,18 @@ $$
 2. Deep Q-Network（DQN）核心思想
 
 DQN使用一个神经网络来逼近Q函数：
+
+
 $$
 Q(s, a; \theta) \approx Q^{*}(s, a)
 $$
 - 输入：当前状态$s$；
+
 - 输出：每个可能动作的Q值$Q(s, a)$；
 
 - 目标：最小化Bellman残差：
+
+  
 $$
 L(\theta) = (r + \gamma \mathop{\max}\limits_{a^{\prime}} Q(s^{\prime}, a^{\prime}; \theta^{-}) - Q(s, a; \theta))^2
 $$
@@ -352,7 +368,7 @@ DQN是经典的深度强化学习算法，有标准的库可供调用，不必�
 ##### 导入库
 
 ```python
-!pip install stable-baselines3[extra]
+! pip install stable-baselines3[extra]
 ```
 ##### 训练
 ```python
