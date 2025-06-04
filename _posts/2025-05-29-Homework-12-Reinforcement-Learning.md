@@ -334,8 +334,6 @@ Deep Q-Network(DQN)是深度强化学习(DRL)中的一种经典算法，由DeepM
 
 1. Q-Learning简述
 
-
-
 Q-Learning的目标是学习状态-动作值函数$Q(s, a)$，表示在状态$s$采取动作$a$后的预期回报。更新公式如下：
 
 
@@ -345,10 +343,7 @@ $$
 
 2. Deep Q-Network（DQN）核心思想
 
-
-
-​	DQN使用一个神经网络来逼近Q函数：
-
+DQN使用一个神经网络来逼近Q函数：
 
 $$
 Q(s, a; \theta) \approx Q^{*}(s, a)
@@ -363,19 +358,12 @@ $$
 $$
 L(\theta) = (r + \gamma \mathop{\max}\limits_{a^{\prime}} Q(s^{\prime}, a^{\prime}; \theta^{-}) - Q(s, a; \theta))^2
 $$
-​	
 
-​	其中$\theta^{-}$是目标网络的参数，是$\theta$的一个延迟副本。
+其中$\theta^{-}$是目标网络的参数，是$\theta$的一个延迟副本。
 
 3. 核心机制
 
-   
-
-   DQN的核心机制有：
-
-- 经验回放（Experience Replay）
-- 目标网络（Target Network）
-- $\epsilon - Greedy$策略
+DQN的核心机制有：经验回放（Experience Replay）、目标网络（Target Network）、 $\epsilon - Greedy$策略
 
 详情参考原始论文[Playing Atari with Deep Reinforcement Learning](https://arxiv.org/abs/1312.5602)
 
