@@ -274,6 +274,9 @@ Total params: 99,060。
 ## Reference
 
 [MobileNet-Pytorch](https://github.com/jmjeon2/MobileNet-Pytorch)
+
 [pytorch-mobilenet](https://github.com/Shubhamai/pytorch-mobilenet)
+
 [MobileNet](https://arxiv.org/abs/1704.04861)
+
 [以pytorch的forward hook为例探究hook机制-阿里云开发者社区](https://developer.aliyun.com/article/1619829#:~:text=Hook 机制是 PyTorch 中一种强大的工具，它允许用户在不修改模型原始代码结构的情况下，介入模型的前向传播（forward）和反向传播（backward）过程。,这种机制在模型可视化、特征提取、梯度分析等诸多任务中非常有用。 对于 forward hook，它主要用于在模型前向传播过程中插入自定义的操作，例如记录中间层的输出、对输出进行修改等。)
