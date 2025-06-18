@@ -12,7 +12,7 @@ math: true
 
 **为什么会发生灾难性遗忘？**
 
-> 核心在于每个任务的error surface不同，从而参数优化的方向也不同。当模型在task1上进行训练时，将神经网络参数更新到task1的loss较小的点$\theta^b$。随后模型在task2上进行训练，将神经网络参数更新到task2的loss较小的点$\theta^*$。由于task1和task2的error surface不同，$\theta^*$在task1上不一定是较好的参数，导致模型在task1上的表现下降。
+> 核心在于每个任务的error surface不同，从而参数优化的方向也不同。当模型在task1上进行训练时，将神经网络参数更新到task1的loss较小的点$\theta^b$。随后模型在task2上进行训练，将神经网络参数更新到task2的loss较小的点$\theta^{\star}$。由于task1和task2的error surface不同，$\theta^{\star}$在task1上不一定是较好的参数，导致模型在task1上的表现下降。
 
 ## Method
 
@@ -21,14 +21,16 @@ Lifelong Learning分为三个研究方向：Replay-based methods，Regularizatio
 Regularization-based methods的核心思想是Selective Synaptic Plasticity（选择性突触可塑性），即模型中的一些参数对前面的任务很重要，只更改不重要的参数。
 
 设之前任务的loss function为$L(\theta)$，要优化的loss function为$L^{\prime}(\theta)$，则：
+
 $$
 L^{\prime}(\theta)=L(\theta)+\lambda\sum_{i}b_i(\theta_{i}-\theta_{i}^b)^2
 $$
+
 其中，$\theta_i$ 是将要学习的参数，$\theta^{b}$是模型从之前的任务中学到的参数。每个$\theta_{i}^{b}$都有一个“守卫”$b_i$，代表有多强的意愿想要$\theta_i$与$\theta_i^b$接近。
 
 如果$b_i=0$，$\theta_i$将不受任何约束，导致Catastrophic Forgetting（灾难性遗忘）；
 
-如果$b_i=\infin$，$\theta_i$总是等于$\theta_i^{b}$，导致Intransigence（不妥协），无法学习新任务。
+如果$b_i=\infty$，$\theta_i$总是等于$\theta_i^{b}$，导致Intransigence（不妥协），无法学习新任务。
 
 $b_i$是直接计算出来的，而不是学出来的。计算$b_i$的方法有很多，本次作业将会涉及以下方法：
 
@@ -79,21 +81,10 @@ Q4 EWC - 1
 
 Elastic Weight Consolidation 這個方法，訓練好了第一個任務之後，在訓練新的任務時，”守衛”這個參數會如何從第一個任務的資料得到？(定義第一個任務的資料為$V$ ，內只有一筆資料記作$x$ ，以及對應的標籤$y$， $L$為損失函數(交叉熵取負號)，$\theta$為訓練好第一個任務的模型參數， $\theta(x)$定義為通過模型後的標 籤機率分佈) (選一個) In Elastic Weight Consolidation, after being trained on the first task, how do we get “guard” from the data of the first task? (We defined the data of the first task as $V$, only one data $x$ and its ground truth $y$ in $V$. $L$is the loss function. $\theta$ is denoted as the model’s parameters trained on the first task. $\theta(x)$is the model’s output.) (choose 1)
 
-- [ ] $$
-  (\frac {\partial L(\theta(x), min(\theta(x)))} {\partial \theta})
-  $$
-
-- [ ] $$
-  (\frac {\partial L(\theta(x), y} {\partial \theta})
-  $$
-
-- [x] $$
-  (\frac {\partial L(\theta(x), y} {\partial \theta})^2
-  $$
-
-- [ ] $$
-  (\frac {\partial L(\theta(x), y} {\partial x})^2
-  $$
+- [ ] $(\frac {\partial L(\theta(x), min(\theta(x)))} {\partial \theta})$
+- [ ] $(\frac {\partial L(\theta(x), y} {\partial \theta})$
+- [x] $(\frac {\partial L(\theta(x), y} {\partial \theta})^2$
+- [ ] $(\frac {\partial L(\theta(x), y} {\partial x})^2$
 
 Q5 EWC - 2 
 
@@ -123,7 +114,6 @@ Q7 MAS - 2
 在求得 MAS 約束項的時候，不需要使用到 label 的資訊。 (選一個) When obtaining the MAS regularization term, we don’t need the label information. (choose 1)
 
 - [ ] 錯誤 False 
-
 - [x] 正確 True
 
 Q8 SI - 1 
