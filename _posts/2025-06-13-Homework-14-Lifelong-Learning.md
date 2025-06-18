@@ -274,6 +274,6 @@ Q20 Other Methods & scenarios - 6
       # get the gradient of each parameter and square it, then average it in all validation set.
       precision_matrices[n].data += p.grad.data ** 2 / num_data
   ```
-## Code
 
+## Code
 [HW14代码](https://github.com/Aaricis/Hung-yi-Lee-ML2022/tree/main/HW14)
