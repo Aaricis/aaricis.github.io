@@ -16,7 +16,7 @@ math: true
 
 如何解决这个问题哪？需要进行**Domain Shift**，我们旨在找到一个特征提取器，它接收输入数据并输出特征空间。这个特征提取器能够滤掉domain相关的信息，只保留不同domain之间共享的特征（[详情参见课程录影](https://youtu.be/Mnk_oUrgppM)）。
 
-**具体的任务是**：给定真实图像（with labels）和涂鸦图像（without labels），使用Domain Adaptation技术预测手绘图像的label。
+**具体的任务是**：给定真实图像（with labels）和涂鸦图像（without labels），使用Domain Adaptation技术预测涂鸦图像的label。
 
 ## Dataset
 
