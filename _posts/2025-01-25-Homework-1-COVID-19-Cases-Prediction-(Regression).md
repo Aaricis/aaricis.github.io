@@ -17,13 +17,7 @@ tags: [Hung-yi Lee]     # TAG names should always be lowercase
 
 ## 思路&Code
 
-【2021版本】双过Stong Baseline:
-
-https://github.com/Aaricis/Hung-yi-Lee-ML2021/blob/main/ML2021_HW1.ipynb
-
-【2022版本】双过Boss Baseline:
-
-https://github.com/Aaricis/Hung-yi-Lee-ML2022/blob/main/ML2022Spring_HW1_Boss.ipynb
+[双过Boss Baseline](https://github.com/Aaricis/Hung-yi-Lee-ML2022/tree/main/HW1)
 
 ## 参考资料
 
