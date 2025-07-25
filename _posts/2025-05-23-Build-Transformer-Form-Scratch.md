@@ -1,5 +1,5 @@
 ---
-title: Build Transformer Form Scratch
+title: Build Transformer From Scratch
 date: 2025-05-21 15:07:00 +/-8
 categories: [LLM]
 tags: [Transformer]     # TAG names should always be lowercase
