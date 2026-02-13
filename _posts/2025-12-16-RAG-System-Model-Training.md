@@ -13,13 +13,13 @@ Your tasks:
 - Design prompt to optimize the generation;
 - RAG with RL.
 
-![](..\assets\images\rag_model_training\rag.png)
+![](../assets/images/rag_model_training/rag.png)
 
 
 
 ### Bi-Encoder & Cross-Encoder
 
-![](..\assets\images\rag_model_training\Bi_vs_Cross-Encoder.png)
+![](../assets/images/rag_model_training/Bi_vs_Cross-Encoder.png)
 
 ### Model
 
@@ -83,11 +83,11 @@ Model checkpoint:
 
 ###  Fine Tune Retriever
 
-![](..\assets\images\rag_model_training\fine_tune_retriever.png)
+![](../assets/images/rag_model_training/fine_tune_retriever.png)
 
 ### Fine Tune Reranker
 
-![](..\assets\images\rag_model_training\fine_tune_reranker.png)
+![](../assets/images/rag_model_training/fine_tune_reranker.png)
 
 ### Inference
 
@@ -224,7 +224,7 @@ training_args = SentenceTransformerTrainingArguments(
 
 ##### Loss Curve
 
-![](..\assets\images\rag_model_training\retriever_train_loss.svg)
+![](../assets/images/rag_model_training/retriever_train_loss.svg)
 
 训练700个step，loss下降到0.2007。
 
@@ -370,7 +370,7 @@ training_args = CrossEncoderTrainingArguments(
 
 ##### Loss Curve
 
-![](..\assets\images\rag_model_training\reranker_train_loss.svg)
+![](../assets/images/rag_model_training/reranker_train_loss.svg)
 
 训练950个step，loss下降到0.2457。
 
