@@ -166,7 +166,7 @@ Retriever Training Process (2.5%) and Reranker Training Process (2.5%). Both sho
 
 ##### Loss Function
 
-[MultipleNegativesRankingLoss]([Losses — Sentence Transformers documentation](https://www.sbert.net/docs/package_reference/sentence_transformer/losses.html#multiplenegativesrankingloss))（MNRL）是一种对比损失函数，常用于训练嵌入模型，尤其是在语义相似性、释义检测和信息检索等任务中。其旨在最大化正样本对（查询和相关段落）之间的相似度，同时最小化锚点与批次中所有不相关示例（负样本）之间的相似度。
+[MultipleNegativesRankingLoss](https://www.sbert.net/docs/package_reference/sentence_transformer/losses.html#multiplenegativesrankingloss)（MNRL）是一种对比损失函数，常用于训练嵌入模型，尤其是在语义相似性、释义检测和信息检索等任务中。其旨在最大化正样本对（查询和相关段落）之间的相似度，同时最小化锚点与批次中所有不相关示例（负样本）之间的相似度。
 
 MNRL使用批次内的负样本（**in-batch negatives**），即批次中所有不匹配的样本对都被视为负样本。例如，在一批 (anchor, positive)对中，其他anchor的正样本充当当前anchor的负样本。这种方法计算效率很高，因为它避免了显式的负样本挖掘，同时每个批次都能提供大量的负样本。
 
@@ -275,7 +275,7 @@ training_args = SentenceTransformerTrainingArguments(
 
 ##### Loss Function
 
-微调Reranker模型使用了[BinaryCrossEntropyLoss]([Losses — Sentence Transformers documentation](https://www.sbert.net/docs/package_reference/cross_encoder/losses.html#binarycrossentropyloss))和[LambdaLoss]([Losses — Sentence Transformers documentation](https://www.sbert.net/docs/package_reference/cross_encoder/losses.html#lambdaloss))。
+微调Reranker模型使用了[BinaryCrossEntropyLoss](https://www.sbert.net/docs/package_reference/cross_encoder/losses.html#binarycrossentropyloss)和[LambdaLoss](https://www.sbert.net/docs/package_reference/cross_encoder/losses.html#lambdaloss)。
 
 - BinaryCrossEntropyLoss（BCE）是sentence-transformers中用于CrossEncoder的基础损失函数，核心思想是：
 
@@ -543,7 +543,7 @@ PS：第0行为base model的测试结果。
 | 3    | (query, [doc1, doc2, …, docN]) [score1, score2, …, scoreN]   | 否                                                           | RankNetLoss   | 32         | 1                    | 2e-5          | 1      | 0.8256    | 0.5226                | 0.3546            |
 | 4    | (query, [doc1, doc2, …, docN]) [score1, score2, …, scoreN]   | 否                                                           | LambdaLoss    | 32         | 1                    | 2e-5          | 1      | 0.8256    | 0.5133                | 0.3522            |
 | 5    | (query, [doc1, doc2, …, docN]) [score1, score2, …, scoreN]   | 手动挖掘                                                     | LambdaLoss    | 8          | 4                    | 2e-5          | 1      | 0.8549    | 0.7737                | 0.3725            |
-| 6    | (query, [doc1, doc2, …, docN]) [score1, score2, …, scoreN]   | [sentence transformers mine_hard_negatives接口]([util — Sentence Transformers documentation](https://www.sbert.net/docs/package_reference/util.html#sentence_transformers.util.mine_hard_negatives)) | LambdaLoss    | 8          | 4                    | 2e-5          | 1      | 0.8549    | 0.7520                | 0.3720            |
+| 6    | (query, [doc1, doc2, …, docN]) [score1, score2, …, scoreN]   | [sentence transformers mine_hard_negatives接口](https://www.sbert.net/docs/package_reference/util.html#sentence_transformers.util.mine_hard_negatives) | LambdaLoss    | 8          | 4                    | 2e-5          | 1      | 0.8549    | 0.7520                | 0.3720            |
 
 PS：第0行为base model的测试结果。
 
@@ -568,7 +568,7 @@ PS：第0行为base model的测试结果。
 
 - 第2行相比第1行，使用手动挖掘的hard negative数据训练，模型测试效果显著提升。
 - 第3-4行，使用原始`./data/train.txt`数据直接微调reranker模型，模型测试效果变差。原因与第1行类似，主要问题出在训练数据上。
-- 第5-6行，分别使用手动挖掘和[sentence transformers mine_hard_negatives接口]([util — Sentence Transformers documentation](https://www.sbert.net/docs/package_reference/util.html#sentence_transformers.util.mine_hard_negatives))获取hard negative数据，模型测试效果均显著提升，且区别不大。这里推荐使用sentence transformers mine_hard_negatives接口，胜在方便。
+- 第5-6行，分别使用手动挖掘和[sentence transformers mine_hard_negatives接口](https://www.sbert.net/docs/package_reference/util.html#sentence_transformers.util.mine_hard_negatives)获取hard negative数据，模型测试效果均显著提升，且区别不大。这里推荐使用sentence transformers mine_hard_negatives接口，胜在方便。
 - 对比第2、5、6行，使用BCELoss或是LambdaLoss对训练的影响不是很大。
 
 ## Reference
