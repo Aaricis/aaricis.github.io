@@ -89,6 +89,10 @@ Model checkpoint:
 
 ![](../assets/images/rag_model_training/fine_tune_reranker.png)
 
+### RL-RAG Top-M动态决策
+
+![](../assets/images/rag_model_training/rl_rag_top-m.png)
+
 ### Inference
 
 - Pipeline: Load data -> Retriever -> Rerank -> Generate -> Evaluate
@@ -99,10 +103,11 @@ Model checkpoint:
 
 ## Results
 
-| 模型      | Recall@10 | MRR@10 (after rerank) | Bi-Encoder CosSim |
-| --------- | --------- | --------------------- | ----------------- |
-| base      | 0.8172    | 0.7240                | 0.3656            |
-| fine tune | 0.8549    | 0.7737                | 0.3725            |
+| 模型         | Recall@10 | MRR@10 (after rerank) | Bi-Encoder CosSim |
+| ------------ | --------- | --------------------- | ----------------- |
+| Base         | 0.8172    | 0.7240                | 0.3656            |
+| Fine tune    | 0.8549    | 0.7737                | 0.3725            |
+| RL-RAG-TOP-M | 0.8549    | 0.7737                | 0.3702            |
 
 ## Report
 
@@ -570,6 +575,213 @@ PS：第0行为base model的测试结果。
 - 第3-4行，使用原始`./data/train.txt`数据直接微调reranker模型，模型测试效果变差。原因与第1行类似，主要问题出在训练数据上。
 - 第5-6行，分别使用手动挖掘和[sentence transformers mine_hard_negatives接口](https://www.sbert.net/docs/package_reference/util.html#sentence_transformers.util.mine_hard_negatives)获取hard negative数据，模型测试效果均显著提升，且区别不大。这里推荐使用sentence transformers mine_hard_negatives接口，胜在方便。
 - 对比第2、5、6行，使用BCELoss或是LambdaLoss对训练的影响不是很大。
+
+### Q4：RL in the loop(2%)
+
+Use **Reinforcement Learning** to train a model deciding the number of passages to include in the prompt.
+
+- Describe your training method and experimental setting to compare with the original results.
+
+使用强化学习算法预测reranker模型每次使用的passage数量top_m。每个episode只有一个step，即选择top_m，该任务本质上是**Contextual Bandit**，不是full RL。
+
+因为在线训练PPO policy时，一边跑LLM一边在线探索，运行速度太慢并且噪声大。实作时，采用**Offline RL + PPO微调policy**策略。
+
+PPO + Offline RL步骤是：
+
+- 先离线采集 RAG 数据；
+- 构造 (state, action, reward) dataset；
+- 用 PPO 在离线环境中训练；
+- 再上线只做 Top-M 决策；
+
+**原始：**
+
+```mathematica
+Query → Retrieve → Rerank → RL → Top_M → LLM → Reward
+```
+
+**改成 Offline RL：**
+
+```mathematica
+Phase1:  Collect Dataset (once)
+Query → Retrieve → Rerank → enumerate M → LLM → reward → save
+
+Phase2: Offline PPO Train
+(state, action, reward) → PPO → policy
+
+Phase3: Online Inference
+Query → Retrieve → Rerank → PPO → Top_M → LLM
+```
+
+#### Phase 1：离线数据采集
+
+对每个query，运行不同的top_m，保存数据。
+
+```python
+# Offline Dataset结构
+sample = {
+    "state": state,
+    "action": int(m),
+    "reward": float(reward),
+    "next_state": state,
+    "done": True,
+    "qid": env.current_qid,
+    "top_m": m + 1,
+    "reward_info": info, # reward各项具体数值
+    "pred_ans": pred_ans # LLM生成的回答
+}
+```
+
+#### Phase 2：Offline PPO Environment
+
+构造一个假的GymEnv，从dataset中采样。
+
+```python
+class OfflineBanditEnv(gym.Env):
+    """
+        1-step Offline Contextual Bandit Environment
+        Designed for PPO training
+    """
+
+    def __init__(self, offline_dataset):
+        super().__init__()
+
+        # -------- Build index --------
+        self.qid_to_state = {}
+        self.qid_to_action_reward = defaultdict(dict)
+
+        for item in offline_dataset:
+            qid = item["qid"]
+            state = np.array(item["state"], dtype=np.float32)
+            action = int(item["action"])
+            reward = float(item["reward"])
+
+            self.qid_to_state[qid] = state
+            self.qid_to_action_reward[qid][action] = reward
+
+        self.qids = list(self.qid_to_state.keys())
+
+        # -------- Spaces --------
+        example_state = next(iter(self.qid_to_state.values()))
+        self.state_dim = len(example_state)
+        self.action_dim = max(
+            max(actions.keys()) for actions in self.qid_to_action_reward.values()
+        ) + 1
+
+        self.observation_space = spaces.Box(
+            low=-np.inf,
+            high=np.inf,
+            shape=(self.state_dim,),
+            dtype=np.float32
+        )
+
+        self.action_space = spaces.Discrete(self.action_dim)
+
+        # current episode state
+        self.current_qid = None
+        self.current_state = None
+
+    # --------------------------------
+    # reset()
+    # --------------------------------
+    def reset(self, seed=None, options=None):
+        super().reset(seed=seed)
+
+        self.current_qid = random.choice(self.qids)
+        self.current_state = self.qid_to_state[self.current_qid]
+
+        return self.current_state, {}
+
+    # --------------------------------
+    # step()
+    # --------------------------------
+    def step(self, action):
+        action = int(action)
+
+        # lookup reward
+        reward = self.qid_to_action_reward[self.current_qid].get(action, 0.0)
+
+        terminated = True
+        truncated = False
+
+        info = {
+            "qid": self.current_qid,
+            "selected_action": action,
+        }
+
+        return self.current_state, reward, terminated, truncated, info
+```
+
+#### Phase 3：PPO Training
+
+```python
+logging.info("Training PPO offline...")
+offline_dataset = load_offline_data(args.rl_offline_data)
+env = OfflineBanditEnv(offline_dataset)
+
+# Contextual Bandit PPO
+model = PPO(
+    "MlpPolicy",
+    env,
+    learning_rate=3e-4,
+    gamma=0.0,  # single step bandit
+    n_steps=2048,
+    batch_size=256,
+    verbose=1,
+    tensorboard_log="./output/rl/ppo/runs"
+)
+
+model.learn(total_timesteps=100000)
+model.save(args.output_dir)
+logging.info(f"RL model saved to {args.output_dir}")
+```
+
+#### Phase 4：Online 推理使用 PPO
+
+```python
+# Batched forward pass through the PPO policy
+with torch.no_grad():
+    policy = ppo_model.policy
+    # get_distribution handles feature extraction + action distribution
+    dist = policy.get_distribution(obs_tensor)
+    # Deterministic: take the mode (argmax) of the distribution
+    actions = dist.mode()  # (B,)
+```
+
+#### Observation 设计
+
+**一个好的 Top_M state 应该包含：**
+
+| 类别         | 示例                   |
+| ------------ | ---------------------- |
+| Score Shape  | topK scores            |
+| Distribution | mean / std / max / min |
+| Gap          | s1-s2, s1-sK           |
+| Entropy      | retrieval entropy      |
+| Query Info   | length, embedding norm |
+| Cost Proxy   | avg passage length     |
+
+#### Reward设计
+
+Top_M 的真实目标是：
+
+```mathematica
+maximize: AnswerQuality − λ · ContextCost
+```
+
+```math
+reward=Quality(pred,gold)−λ⋅TokenCost(context)
+```
+
+| 模块      | 作用               |
+| --------- | ------------------ |
+| Semantic  | embedding cosine   |
+| Lexical   | 中文 Rouge-L       |
+| Cost      | token cost penalty |
+| Normalize | bounded for PPO    |
+
+```mathematica
+reward = w1 * cosine + w2 * rouge_l - λ * token_cost
+```
 
 ## Reference
 
