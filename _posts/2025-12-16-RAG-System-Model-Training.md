@@ -783,6 +783,90 @@ reward=Quality(pred,gold)−λ⋅TokenCost(context)
 reward = w1 * cosine + w2 * rouge_l - λ * token_cost
 ```
 
+#### Additional Analysis
+
+分析Ground Truth，83.5%的query都只对应一个passage，即`top_m=1`。
+
+```mathematica
+平均每个 query 有 1.18 个相关文档
+最少: 1, 最多: 4
+
+分布:
+  1 个相关文档: 2790 个 queries (83.5%)
+  2 个相关文档: 522 个 queries (15.6%)
+  3 个相关文档: 27 个 queries (0.8%)
+  4 个相关文档: 3 个 queries (0.1%)
+```
+
+使用PPO模型预测top_m，对所有query预测的top_m都是1。这种行为在统计上是合理的，并不是PPO collapse。reward结构在数学上强烈偏向`top_m=1`，PPO学成常数1是”正确优化结果“，不是bug。
+
+```math
+reward=tanh(quality−λ⋅cost−0.01⋅M)
+```
+
+其中：
+
+- $quality \in [0,1]$
+- $cost=tanh(ctx_tokens / 800)$
+- $\lambda = 0.2$
+- $m\_ penalty = 0.01\cdot M$
+
+##### 关键问题
+
+1. **cost是单调递增的**
+
+   ```math
+   cost=tanh(ctx_tokens/800)
+   ```
+
+   ctx_tokens和top_m正相关，所以：
+
+   ```math
+   M↑⇒cost↑⇒reward↓
+   ```
+
+   但是，quality未必会随着M增加。如果Top 1已经够好，增加passage只会增加token、引入噪声、降低cosSim。
+
+2. **惩罚了两次top_m**
+
+   已经有`lambda_cost * cost`，又增加`m_penalty = 0.01 * M`，相当于**双重惩罚context**：
+
+   ```math
+   reward=quality−0.2∗cost−0.01M
+   ```
+
+   > 例如：如果平均每passage 200 tokens:
+   >
+   > top_m=1 -> 200 tokens
+   >
+   > top_m=2 -> 400 tokens
+   >
+   > ```mathematica
+   > cost(200) ≈ tanh(0.25) ≈ 0.24
+   > cost(400) ≈ tanh(0.5) ≈ 0.46
+   > ```
+   >
+   > 惩罚差$0.2∗(0.46−0.24)≈0.044$，再加$0.01$，总共$≈ 0.054$，这比quality的提升空间还大。
+
+3. **tanh压缩**
+
+   ```python
+   reward = quality - lambda_cost * cost - m_penalty
+   reward = float(np.tanh(reward))
+   ```
+
+   如果reward本身已经偏负，负reward会放大梯度影响，进一步推动PPO避开top_m>1。
+
+   ```python
+   -0.2 → tanh(-0.2) ≈ -0.197
+   -0.4 → tanh(-0.4) ≈ -0.38
+   ```
+
+> [!IMPORTANT] 
+>
+> - 因此不是PPO的问题，而是reward设计问题。目前reward本质在优化”尽量少用context“，而不是”尽量提升CosSim“。
+> - 使用PPO模型推理top_m，Bi-Encoder CosSim从0.3725降低到0.3702，约0.617%；LLM推理使用passag数量从3篇降低到1篇，约66.67%。
+
 ## Reference
 
 - [Training and Finetuning Embedding Models with Sentence Transformers v3](https://huggingface.co/blog/train-sentence-transformers#training-and-finetuning-embedding-models-with-sentence-transformers-v3)
