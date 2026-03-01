@@ -785,6 +785,10 @@ reward = w1 * cosine + w2 * rouge_l - λ * token_cost
 
 #### Additional Analysis
 
+PPO policy训练loss如图：
+
+![](../assets/images/rag_model_training/train_loss.svg)
+
 分析Ground Truth，83.5%的query都只对应一个passage，即`top_m=1`。
 
 ```mathematica
