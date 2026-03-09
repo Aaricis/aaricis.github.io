@@ -109,6 +109,10 @@ Model checkpoint:
 | Fine tune    | 0.8549    | 0.7737                | 0.3725            |
 | RL-RAG-TOP-M | 0.8549    | 0.7737                | 0.3702            |
 
+## Code
+
+[RAG-System-Model-Training](https://github.com/Aaricis/RAG-System-Model-Training)
+
 ## Report
 
 ### Q1: Retriever & Reranker Tuning (5%) 
