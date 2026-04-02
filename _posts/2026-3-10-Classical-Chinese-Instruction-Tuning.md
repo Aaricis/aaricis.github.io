@@ -30,7 +30,11 @@ math: true
 
 ### Model
 
-Qwen是由阿里巴巴训练地开源模型，使用[Qwen3-4B](https://huggingface.co/Qwen/Qwen3-4B)作为基模型。
+实验中用到的基础模型有：
+
+- [Qwen3-4B](https://huggingface.co/Qwen/Qwen3-4B)：由阿里巴巴训练的开源模型；
+
+- [Llama3-Taiwan (8B)](https://huggingface.co/yentinglin/Llama-3.1-Taiwan-8B)：使用繁体中文数据训练的Llama-3-8b 模型。
 
 ### QLORA
 
