@@ -107,4 +107,42 @@ LLM越狱攻击（Jailbreak Attack）方法可分为：
   - 微调良性数据集（Benign Datasets）：攻击者只使用完全无害的数据进行微调，却仍能破坏安全性。
     - 安全对齐本身是对模型原始能力的「约束」。即使是良性微调，也可能削弱这种约束的泛化性——模型为了适应新任务分布，会「遗忘」或「稀释」之前学到的安全边界。
 
-  
+## Methodology: The Spectrum of Strategies
+
+实验尝试了7大类共计19种攻击方法，分布如下：
+
+
+
+![](../assets/images/jailbreak_olympics/attack_type_pie_chart.png)
+
+| 攻击类型                     | 数量   | 占比     |
+| ---------------------------- | ------ | -------- |
+| **Template Attack**          | 6      | 31.58%   |
+| **LLM Based Attack**         | 5      | 26.32%   |
+| **Hybrid RAG**               | 2      | 10.53%   |
+| **Steganography Attack**     | 2      | 10.53%   |
+| **Base (原始)**              | 1      | 5.26%    |
+| **Fine-tuning Based Attack** | 1      | 5.26%    |
+| **RL Based Attack**          | 1      | 5.26%    |
+| **Steganography + ICL**      | 1      | 5.26%    |
+| **合计**                     | **19** | **100%** |
+
+## Results
+
+| 排名 | 攻击类型         | 方法                               | weighted\_final\_acc | final\_acc |
+| :--: | :--------------- | :--------------------------------- | :------------------: | :--------: |
+|  🥇   | Hybrid RAG       | Hybrid RAG                         |        0.8440        |   0.8496   |
+|  🥈   | Hybrid RAG       | PAP + Safe2Harm + Hybrid RAG       |        0.7301        |   0.7314   |
+|  🥉   | RL Based Attack  | PAP + Safe2Harm + xJailbreak       |        0.6931        |   0.6941   |
+|  4   | Steganography    | PAP + Safe2Harm + Past tense       |        0.6852        |   0.6889   |
+|  5   | LLM Based Attack | PAP + Safe2Harm + Foot-In-The-Door |        0.6636        |   0.6671   |
+|  6   | LLM Based Attack | PAP + Safe2Harm                    |        0.6594        |   0.6581   |
+|  7   | LLM Based Attack | PAP (multiple attempts)            |        0.6287        |   0.6414   |
+|  8   | Fine-tuning      | Fine-Tuning Only                   |        0.5634        |   0.5681   |
+|  9   | Template Attack  | Multilayer obfuscation             |        0.5109        |   0.5180   |
+|  10  | Steganography    | Past tense                         |        0.4733        |   0.4897   |
+
+上表展示了排名Top 10的攻击方法，完整实验数据参见：🔗 [final_results_sorted.xlsx](https://github.com/Aaricis/LLM-Jaibreak-Challenge/blob/main/results/final_results_sorted.xlsx)
+
+## Deep Dive
+
