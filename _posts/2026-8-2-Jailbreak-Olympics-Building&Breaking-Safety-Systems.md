@@ -127,22 +127,29 @@ LLM越狱攻击（Jailbreak Attack）方法可分为：
 | **Steganography + ICL**      | 1      | 5.26%    |
 | **合计**                     | **19** | **100%** |
 
-## Results
+## Experimental Results
 
-| 排名 | 攻击类型         | 方法                               | weighted\_final\_acc | final\_acc |
-| :--: | :--------------- | :--------------------------------- | :------------------: | :--------: |
-|  🥇   | Hybrid RAG       | Hybrid RAG                         |        0.8440        |   0.8496   |
-|  🥈   | Hybrid RAG       | PAP + Safe2Harm + Hybrid RAG       |        0.7301        |   0.7314   |
-|  🥉   | RL Based Attack  | PAP + Safe2Harm + xJailbreak       |        0.6931        |   0.6941   |
-|  4   | Steganography    | PAP + Safe2Harm + Past tense       |        0.6852        |   0.6889   |
-|  5   | LLM Based Attack | PAP + Safe2Harm + Foot-In-The-Door |        0.6636        |   0.6671   |
-|  6   | LLM Based Attack | PAP + Safe2Harm                    |        0.6594        |   0.6581   |
-|  7   | LLM Based Attack | PAP (multiple attempts)            |        0.6287        |   0.6414   |
-|  8   | Fine-tuning      | Fine-Tuning Only                   |        0.5634        |   0.5681   |
-|  9   | Template Attack  | Multilayer obfuscation             |        0.5109        |   0.5180   |
-|  10  | Steganography    | Past tense                         |        0.4733        |   0.4897   |
+| 排名 | 攻击类型                           | 方法                               | final\_acc | 相比Base提升 | weighted\_final\_acc | 相比Base提升（weighted） |
+| :--: | :--------------------------------- | :--------------------------------- | :--------: | :----------: | :------------------: | :----------------------: |
+|  ⭐🥇  | **Hybrid RAG** ⭐                   | **⭐ Hybrid RAG（本文原创）⭐**      | **0.8496** | **+916.9%**  |      **0.8440**      |       **+852.1%**        |
+|  🥈   | LLM Based Attack + Hybrid RAG      | PAP + Safe2Harm + Hybrid RAG       |   0.7314   |   +775.4%    |        0.7301        |         +723.6%          |
+|  🥉   | LLM Based Attack + RL Based Attack | PAP + Safe2Harm + xJailbreak       |   0.6941   |   +730.8%    |        0.6931        |         +681.9%          |
+|  4   | LLM Based Attack + Steganography   | PAP + Safe2Harm + Past tense       |   0.6889   |   +724.6%    |        0.6852        |         +673.0%          |
+|  5   | LLM Based Attack                   | PAP + Safe2Harm + Foot-In-The-Door |   0.6671   |   +698.5%    |        0.6636        |         +648.6%          |
+|  6   | LLM Based Attack                   | PAP + Safe2Harm                    |   0.6581   |   +687.7%    |        0.6594        |         +643.9%          |
+|  7   | LLM Based Attack                   | PAP (multiple attempts)            |   0.6414   |   +667.7%    |        0.6287        |         +609.2%          |
+|  8   | Fine-tuning                        | Fine-Tuning Only                   |   0.5681   |   +580.0%    |        0.5634        |         +535.6%          |
+|  9   | Template Attack                    | Multilayer obfuscation             |   0.5180   |   +520.0%    |        0.5109        |         +476.3%          |
+|  10  | Steganography                      | Past tense                         |   0.4897   |   +486.1%    |        0.4733        |         +433.9%          |
+|  —   | /                                  | Base (raw toxic prompts)           |   0.0835   |      —       |        0.0886        |            —             |
 
-上表展示了排名Top 10的攻击方法，完整实验数据参见：🔗 [final_results_sorted.xlsx](https://github.com/Aaricis/LLM-Jaibreak-Challenge/blob/main/results/final_results_sorted.xlsx)
+上表展示了最终评分Top 10的攻击方法，完整实验数据参见：🔗 [final_results_sorted.xlsx](https://github.com/Aaricis/LLM-Jaibreak-Challenge/blob/main/results/final_results_sorted.xlsx)
+
+- **Hybrid RAG表现最佳**：**Hybrid RAG**为本实验提出的原创框架，融合了**RAG检索增强**、**多模型竞技场生成**、**三阶段安全评估**和**Pandas择优选择**四大模块，在final_acc和weighted_final_acc两项指标上均显著优于Base方法，提升幅度分别达到**916.9%**和**852.1%**；
+
+- **组合策略优于单一策略**：排名前6的方法中，5个都包含**PAP + Safe2Harm** 作为基础方法，说明「说服性改写 + 语义同构」起到核心作用；
+- **第10名也有4~5倍提升**：最弱的Past tense方法也比Base高出433%，远胜于原始prompt；
+- **Fine-Tuning单独使用效果不佳**：Fine-Tuning Only排名第8（+535%），在所有使用LLM Based Attack的方法之后，说明「生成策略」比Fine-Tuning更有效。
 
 ## Deep Dive
 
