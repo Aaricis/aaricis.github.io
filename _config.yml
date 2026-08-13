@@ -241,3 +241,7 @@ kramdown:
 
 plugins:
   - jekyll-feed
+
+mermaid: true
+
+use_math: true
