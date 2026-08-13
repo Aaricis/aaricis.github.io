@@ -4,6 +4,7 @@ date: 2026-8-2 15:07:00 +/-8
 categories: [Jailbreak Attacks]
 tags: [zero-shot, few-shot, in-context learning, lora, qlora, fine-tuning, jailbreak]     # TAG names should always be lowercase
 math: true
+mermaid: true
 ---
 
 ## Introduction
@@ -288,7 +289,7 @@ flowchart TD
 
 ##### 阶段2：多模型对抗生成
 
-采用多模型对抗生成的策略以最大化攻击多样性。
+采用多模型对抗生成策略以最大化攻击多样性。
 
 ##### 阶段3：顺序评估
 
