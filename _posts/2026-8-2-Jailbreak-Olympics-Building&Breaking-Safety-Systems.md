@@ -156,11 +156,13 @@ LLM越狱攻击（Jailbreak Attack）方法可分为：
 
 ### Hybrid RAG
 
-在此之前**Template Attack**、**LLM Based Attack**、**Steganography Attack**等LLM越狱方法获得了一定程度的成功，也因此积累了一批成功越狱的`rewritten prompt`。这些`rewritten prompt`成为进行后续SFT（监督微调，Supervised Fine-Tuning）和RAG（检索增强生成，Retrieval-Augmented Generation）的基础。
+在此之前**Template Attack**、**LLM Based Attack**、**Steganography Attack**等LLM越狱方法获得了一定程度的成功，也因此积累了一批成功越狱的`rewritten prompt`。这些`rewritten prompt`促成后续SFT（监督微调，Supervised Fine-Tuning）和RAG（检索增强生成，Retrieval-Augmented Generation）。
+
+RAG和SFT是运行Hybrid RAG架构的基础，需预先构建RAG知识库和训练LoRA Adapter。
 
 #### RAG
 
-将成功越狱的`rewritten prompt`与原始`prompt`整理为`{prompt, rp}` pair，作为后续RAG检索阶段的知识库。
+将成功越狱的`rewritten prompt`与原始`prompt`整理为`{prompt, rp}` pair，构建后续RAG检索阶段的知识库。
 
 ```json
 {
@@ -175,7 +177,7 @@ LLM越狱攻击（Jailbreak Attack）方法可分为：
 
 #### SFT
 
-使用Unsloth框架进行PEFT，包括Qwen、Llama、DeepSeek、gemma等系列的模型共计15个，具体如下：
+使用Unsloth框架进行PEFT，包括Qwen、Llama、DeepSeek、gemma等系列模型共计15个，具体如下：
 
 | 序号 |      模型系列       |            Base Model HF ID            | 本地 LoRA 目录 (LoRA Local Dir) |
 | :--: | :-----------------: | :------------------------------------: | :-----------------------------: |
@@ -208,9 +210,11 @@ LLM越狱攻击（Jailbreak Attack）方法可分为：
 - **Batch Size:** 4 (with Gradient Accumulation)
 - **Max Steps:** 100~150 (针对 Style Transfer 任务，少量步数即可收敛，避免过拟合)
 
+
+
 #### Hybrid RAG Architecture
 
-如下图所示，Hybrid RAG架构包括四个阶段：
+如下图所示，完整的Hybrid RAG架构包括四个阶段：
 
 ```mermaid
 flowchart TD
@@ -289,13 +293,93 @@ flowchart TD
 
 ##### 阶段2：多模型对抗生成
 
-采用多模型对抗生成策略以最大化攻击多样性。
+采用多模型对抗生成策略 （Ensemble Strategy）生成多个`rewritten prompt`候选，以最大化攻击多样性。
+
+RAG Hybrid框架提供Qwen、Llama、DeepSeek、gemma等系列模型共计15个。对于每个模型，会生成两类`rewritten prompt`候选。如下图所示，分别为Base模型生成的3个候选和使用LoRA Adapter生成的1个候选：
+
+```
+Original Prompt
+      │
+      ├───────────────┐
+      │               │
+      ▼               ▼
+   Base LLM        LoRA LLM
+      │               │
+ ┌────┼────┐          │
+ ▼    ▼    ▼          ▼
+B1   B2   B3          S1
+```
+
+再加上**阶段1**中RAG检索得到的Top 3 prompt，构成该原始prompt最终的`rewritten prompt`候选池：
+
+```
+                  Original Prompt
+                       │
+       ┌───────────────┼───────────────┐
+       │               │               │
+       ▼               ▼               ▼
+    RAG Top-3       Base Model       LoRA Model
+       │               │               │
+   R1 R2 R3         B1 B2 B3           S1
+       │               │               │
+       └───────────────┴───────────────┘
+                       │
+                       ▼
+              Candidate Pool
+```
 
 ##### 阶段3：顺序评估
 
+将所有候选来源（RAG + 各模型的 Base/SFT 输出）合并、去重、过滤空值，然后按顺序执行三个子步骤：
+
+| 步骤                     | 模型                          | 作用                                      | 输出                                |
+| ------------------------ | ----------------------------- | ----------------------------------------- | ----------------------------------- |
+| **Step 1: Safety Guard** | `Qwen3Guard-Gen-0.6B`         | 判断每个候选改写的安全性                  | `Safe` / `Unsafe` / `Controversial` |
+| **Step 2: Chat 模拟**    | `Llama-3.2-3B-Instruct`       | 用候选改写作为输入，模拟目标模型回答 3 次 | 3 条 chat\_response                 |
+| **Step 3: Judge 评分**   | `Qwen3-1.7B-Usefulness-Judge` | 评估 "原始问题 vs Chat 回复" 的相关性     | `YES`(1.0) / `NO`(0.0)              |
+
+- Safety和Judge使用`temperature=0`保证判定稳定；
+- Chat使用`temperature=0.7`模拟真实对话场景。
+
+整体流程：
+
+```
+Rewrite Candidate
+       │
+       ▼
+┌───────────────┐
+│ Guard Model   │
+│ Safety        │
+└───────┬───────┘
+        │
+        ▼
+ Safety Label
+        │
+        ▼
+┌───────────────┐
+│ Chat Model    │
+└───────┬───────┘
+        │
+        ▼
+   Response × 3
+        │
+        ▼
+┌───────────────┐
+│ Usefulness    │
+│ Judge         │
+└───────┬───────┘
+        │
+        ▼
+ relevance_score
+```
+
 ##### 阶段4：最优候选选择
 
-
+- **量化评分**：对每个候选`rewritten prompt`进行量化评分，`Safe=1.0`，`Controversial=0.5`，`Unsafe/Refusal/Unknown=0.0`。计算综合分：`score = safety_score × relevance_score`。
+- **分组排序**：按`original_prompt`分组，每组内：
+  - 先按综合分`score`**降序**；
+  - 在同分情況下，选择**长度较长**的`rewritten prompt` (通常包含更多 Context Padding，能稀释恶意意图)；
+- **取Top 1**：每组保留第一名。
 
 ### PAP + Safe2Harm + X
 
