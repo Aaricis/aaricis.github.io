@@ -387,7 +387,17 @@ Rewrite Candidate
 
 - **取Top 1**：每组保留第一名。
 
-### PAP + Safe2Harm + X
+### PAP + Safe2Harm + X: A Progressive Analysis of Jailbreak Composition
+
+#### PAP as the Foundation
+
+
+
+#### The Contribution of Safe2Harm
+
+#### Comparing Different X
+
+#### Why Hybrid RAG Outperforms Other Combinations?
 
 
 
