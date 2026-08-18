@@ -391,9 +391,89 @@ Rewrite Candidate
 
 #### PAP as the Foundation
 
+大多数传统的AI安全研究将AI模型视为机器，主要集中于安全专家开发的算法攻击。随着LLM日益普及和功能强大，非专业用户在日常交互中也可能带来风险。**PAP（Persuasive Adversarial Prompts，说服性对抗提示）**从全新的视角出发，把LLM视为类似人类的交流者，探索日常语言交互与AI安全之间被忽略的交集。
 
+传统LLM越狱往往把LLM看成：
+
+- Level 1：**算法系统（Algorithmic System）**，例如GCG、AutoDAN、suffix optimization；
+- Level 2：**指令追随者（Instruction Follower）**，例如role-play、persona、virtualization、hypothetical scenario；
+
+而PAP更进一步，把LLM视为一个能够参与人类社会交流、理解说服和论证的**Human-like Communicator**。
+
+因此，与传统的利用乱码、对抗性后缀或指令嵌套等技术漏洞的越狱方式不同，PAP基于社会科学研究的说服分类法，利用模型对人类语言的理解能力来绕过安全防御。核心思想可表示为：
+$$
+q_{\text{harmful}} \xrightarrow{\text{persuasion technique}} q_{\text{PAP}} \xrightarrow{\text{LLM}} y
+$$
+其中：
+
+- $q_{\text{harmful}}$：原始有害prompt；
+- ${\text{persuasion technique}}$：某一种说服策略；
+- $q_{\text{PAP}}$：加入说服策略之后的prompt；
+- $y$：目标LLM的回答。
+
+**PAP不是改变harmful intent本身，而是改变表达harmful intent的方式。**
+
+PAP的核心是**说服技巧分类法**，作者从社会科学理论中提取并总结了**40种人类说服技巧**，并将这些技术作为prompt rewrite的控制变量。例如：
+
+| 类型                  | 核心思想                         |
+| --------------------- | -------------------------------- |
+| Logical Appeal        | 用逻辑、理由、论证让目标接受请求 |
+| Emotional Appeal      | 激发情绪                         |
+| Authority Endorsement | 借助权威、专家身份               |
+| Social Proof          | 暗示其他人已经这么做             |
+| Framing               | 改变问题的解释框架               |
+| Priming               | 先提供某种上下文，影响后续理解   |
+| Reciprocity           | 利益交换                         |
+| Scarcity              | 强调稀缺性/紧迫性                |
+| Threat                | 施加压力                         |
+| Deception             | 通过误导改变理解                 |
+| Door-in-the-face      | 先提出更大的请求，再降低请求     |
+| Foot-in-the-door      | 先提出较小请求，再逐渐升级       |
+| Hypothetical framing  | 用假设情境包装请求               |
+
+因此PAP并不是一个固定的越狱模板，而是：
+$$
+PAP = {\text{Harmful Prompt}} + {\text{Persuasion Strategy}}
+$$
+
+> [!important]
+>
+> 本项目从40种人类说服技巧中抽取**Top 5**有效的说服策略构造[persuasion_template](https://github.com/Aaricis/LLM-Jaibreak-Challenge/blob/main/src/persuasive/mutation_utils.py#L37)自动化模板，利用辅助LLM（deepseek-v4-flash、glm-4-flash-250414）作为“rewriter”，通过Few-Shot In-Context Learning将原始有害提示词按照特定修辞策略进行变异，同时强制保留原始恶意意图。
+>
+> - 策略模板遵循统一的**五段式结构**：
+>
+>   ```
+>   1. 任务引导语（Meta-Prompt）
+>      └─ 声明目标：通过"定向变异"（directed mutation）生成多样化对抗样本
+>      
+>   2. 策略定义（Technique Definition）
+>      └─ 用一句话定义该说服技巧
+>      
+>   3. Few-Shot 示例（3-5个）
+>      ├─ Original Adversarial Prompt：原始有害请求
+>      ├─ Core and Specific Intention：强制提取的恶意意图（必须保留）
+>      └─ Mutated Adversarial Prompt：变异后的对抗提示
+>      
+>   4. 待处理输入占位符
+>      └─ "Adversarial Prompt - %s"（运行时填入新的 toxic prompt）
+>      
+>   5. 输出格式约束
+>      └─ 强制要求输出 #the_core_specific_harmful_or_unlawful_intention 和 #mutated_text...
+>   ```
+>
+> - **Top 5说服策略**
+>
+>   | 说服策略                                    | 定义                                               |
+>   | ------------------------------------------- | -------------------------------------------------- |
+>   | Evidence-based Persuasion（基于证据的说服） | 使用经验数据、统计资料和事实来支持某个主张或决定。 |
+>   | Expert Endorsement（专家背书）              | 引用领域专家的观点来支持某个主张。                 |
+>   | Misrepresentation（虚假陈述 / 身份伪装）    | 以不真实或不真诚的方式呈现自己或某个议题。         |
+>   | Authority Endorsement（权威机构背书）       | 引用权威来源（机构、组织）来支持主张。             |
+>   | Logical appeal（逻辑诉求）                  | 通过逻辑推理和因果关系来支持主张。                 |
 
 #### The Contribution of Safe2Harm
+
+
 
 #### Comparing Different X
 
@@ -410,4 +490,6 @@ Rewrite Candidate
 Prompt Transformation vs Intent Preservation
 
 ### 失败案例与 Hard Cases 分析
+
+## Reference
 
