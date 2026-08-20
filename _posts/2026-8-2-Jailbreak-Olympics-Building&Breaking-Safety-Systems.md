@@ -511,7 +511,7 @@ $$
 
 在验证了PAP+Safe2Harm框架的有效性后，为了进一步提升性能，我们将PAP+Safe2Harm作为**黄金基线**，额外引入四种独立方法：Foot-In-The-Door、Past Tense、xJailbreak、Hybrid RAG，组成$PAP + Safe2Harm + X$ 框架，其中：
 $$
-X∈{Foot-In-The-Door,Past Tense,xJailbreak,Hybrid RAG}
+X\in{Foot-In-The-Door,Past Tense,xJailbreak,Hybrid RAG}
 $$
 
 测试结果如下表所示：
