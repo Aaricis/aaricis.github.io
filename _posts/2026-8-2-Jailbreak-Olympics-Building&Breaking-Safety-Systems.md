@@ -486,11 +486,11 @@ $$
 
 实验分别测试了Safe2Harm单独使用、PAP单独使用以及二者结合后的效果。
 
-| 方法                | final\_acc | Safety Score | Relevance Score |
-| ------------------- | ---------- | ------------ | --------------- |
-| **Safe2Harm Only**  | **0.2249** | **0.7635**   | **0.3445**      |
-| **PAP Only**        | 0.4216     | 0.5244       | 0.6761          |
-| **PAP + Safe2Harm** | **0.6581** | **0.9177**   | **0.7044**      |
+| Method              | Safety Score | Relevance Score | Final\_acc |
+| ------------------- | ------------ | --------------- | ---------- |
+| **Safe2Harm Only**  | **0.7635**   | **0.3445**      | **0.2249** |
+| **PAP Only**        | 0.5244       | 0.6761          | 0.4216     |
+| **PAP + Safe2Harm** | **0.9177**   | **0.7044**      | **0.6581** |
 
 - **Safe2Harm Alone: Strong Safety but Limited Relevance**
   - Safe2Harm能够获得较高的Safety Score，但这种Safety并没有转化成相应的Relevance。改进重写后的提示安全性，并不一定意味着保留原始任务的意图。
@@ -505,13 +505,41 @@ $$
   - PAP和Safe2Harm具有互补性，PAP保留原始意图，Safe2Harm提升`rewritten prompt`的安全性；
   - 从 PAP Only 到 PAP + Safe2Harm `final_acc`从0.4216到0.6581，提升约56.1%。
 
+**PAP解决了相关性瓶颈，而Safe2Harm解决了安全性瓶颈，二者结合可同时消除这两个瓶颈。**
+
 #### Comparing Different X
+
+在验证了PAP+Safe2Harm框架的有效性后，为了进一步提升性能，我们将PAP+Safe2Harm作为**黄金基线**，额外引入四种独立方法：Foot-In-The-Door、Past Tense、xJailbreak、Hybrid RAG，组成$PAP + Safe2Harm + X$ 框架，其中：
+$$
+X∈{Foot-In-The-Door,Past Tense,xJailbreak,Hybrid RAG}
+$$
+
+测试结果如下表所示：
+
+- 四种新增方法最终得分都优于PAP+Safe2Harm基线；
+- 性能提升源于安全性和相关性之间的权衡；
+- Hybrid RAG获得了最高的`Final_acc`，表面同时提升两个维度比优化单一维度更有利。
+
+| Method             | Safety Score | Relevance Score | Final\_acc |
+| ------------------ | ------------ | --------------- | ---------- |
+| PAP + Safe2Harm    | 0.9177       | 0.7044          | 0.6581     |
+| + Foot-In-The-Door | 0.8895       | 0.7326          | 0.6671     |
+| + Past tense       | 0.9293       | 0.7224          | 0.6889     |
+| + xJailbreak       | **0.9923**   | 0.6992          | 0.6941     |
+| + Hybrid RAG       | 0.9794       | **0.7429**      | **0.7314** |
+
+总体而言，不同的**X**对PAP+Safe2Harm框架提供了互补的改进。Foot-In-The-Door主要提升了相关性，但略微降低了安全性；而xJailbreak则显著提升了安全性，但对相关性的提升甚微；Past Tense在两个维度上都提供了更为均衡的改进。值得注意的是，Hybrid RAG同时提升了安全性和相关性，分别达到了 0.9794 和 0.7429 的得分。因此，它获得了最高的最终得分0.7314，比PAP+Safe2Harm基线高出7.33%。这些结果表明，`rewrite prompt`的有效性并不在于单一维度的最大化，而在于考虑安全性和相关性之间的良好平衡。
+
+| Method           | ΔSR         | ΔUR         | ΔFinal      | Main effect          |
+| ---------------- | ----------- | ----------- | ----------- | -------------------- |
+| Foot-In-The-Door | −0.0282     | **+0.0282** | +0.0090     | Relevance-oriented   |
+| Past Tense       | +0.0116     | +0.0180     | +0.0308     | Balanced improvement |
+| xJailbreak       | **+0.0746** | −0.0052     | +0.0360     | Safety-oriented      |
+| Hybrid RAG       | +0.0617     | **+0.0385** | **+0.0733** | Balanced + Strong    |
 
 #### Why Hybrid RAG Outperforms Other Combinations?
 
 
-
-### Safety-Useful Trade off
 
 
 
