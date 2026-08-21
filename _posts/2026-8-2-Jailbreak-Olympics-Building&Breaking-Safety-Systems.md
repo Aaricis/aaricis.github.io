@@ -210,8 +210,6 @@ RAG和SFT是运行Hybrid RAG架构的基础，需预先构建RAG知识库和训�
 - **Batch Size:** 4 (with Gradient Accumulation)
 - **Max Steps:** 100~150 (针对 Style Transfer 任务，少量步数即可收敛，避免过拟合)
 
-
-
 #### Hybrid RAG Architecture
 
 如下图所示，完整的Hybrid RAG架构包括四个阶段：
@@ -387,6 +385,8 @@ Rewrite Candidate
 
 - **取Top 1**：每组保留第一名。
 
+Hybrid RAG 的优势并非来自某一种特殊越狱模板，而来自 **candidate diversity + evaluation-based selection**。
+
 ### PAP + Safe2Harm + X: A Progressive Analysis of Jailbreak Composition
 
 #### PAP as the Foundation
@@ -543,15 +543,39 @@ $$
 
 #### Why Hybrid RAG Outperforms Other Combinations?
 
+结果表明，在所评估的组合中，Hybrid RAG在整体性能上表现最佳。与PAP+Safe2Harm基线相比，Hybrid RAG将安全性从0.9177 提高到 0.9794，相关性从 0.7044 提高到 0.7429。与一些其他组合在两个目标之间存在权衡不同，Hybrid RAG同时提升了这两个维度的表现。
+
+更深入的比较进一步凸显了这一优势。Foot-In-The-Door 将相关性从 0.7044 提升至 0.7326，但将安全性从 0.9177 降低至 0.8895。相反，xJailbreak 获得了最高的安全性得分 0.9923，但其相关性略有下降，降至 0.6992。Past Tense的提升更为均衡，同时提高了安全性和相关性，但其增长幅度仍小于Hybrid RAG的表现。这些结果表明，不同的辅助方法对评估目标的不同维度产生影响。
+
+最高的安全得分并不一定意味着最终得分最高。尽管xJailbreak的安全得分高于Hybrid RAG（0.9923 vs. 0.9794），但其相关性得分较低（0.6992 vs. 0.7429），导致最终得分为0.6941，而Hybrid RAG的最终得分为0.7314。
+
+最终指标同时综合了安全$SR$、相关性$UR$和成本项$cost$：
+$$
+Final = \frac{\sum_{i}(6 - cost_{i})SR_{i}UR_{i}}{\sum_{i}cost_{i}}
+$$
+由于成本项$cost_{i}$是固定值，我们忽略$cost$，仅考虑$SR \times UR$：
+
+| Method             | SR × UR      |
+| ------------------ | ------------ |
+| PAP + Safe2Harm    | ≈ 0.6466     |
+| + Foot-In-The-Door | ≈ 0.6518     |
+| + Past Tense       | ≈ 0.6709     |
+| + xJailbreak       | ≈ 0.6931     |
+| + **Hybrid RAG**   | **≈ 0.7276** |
+
+仅优化安全因素不足以最大化整体性能，Hybrid RAG的优势来自$SR \times UR$。如下图所示，Hybrid RAG位于Safety-Relevance空间的右上方区域，进一步印证其优势主要体现在两个目标的联合优化上。
+
+![](../assets/images/jailbreak_olympics/safety_relevance_tradeoff.png)
+
+总体而言，Hybrid RAG的主要优势在于其能够在安全性和相关性之间实现最佳的平衡。它同时提升这两个维度，而非以牺牲其中一个为代价进行优化。因此，Hybrid RAG将PAP+Safe2Harm的最终得分从 0.6581 提升至 0.7314，提升7.33%。这些发现支持了引入互补性重写策略的有效性，并表明最优组合应着眼于同时提升下游评估流程中的多个目标，而非仅追求单一指标的最大化。
+
+### Failure Cases and Hard Cases Analysis
 
 
-### Trade-off Analysis
 
-### Intent Preservation
+### Conclusion
 
-Prompt Transformation vs Intent Preservation
-
-### 失败案例与 Hard Cases 分析
+### Future Work
 
 ## Reference
 
