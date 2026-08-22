@@ -571,11 +571,46 @@ $$
 
 ### Failure Cases and Hard Cases Analysis
 
+#### Overall Failure Statistics
 
+尽管Hybrid RAG显著提升了整体性能，但任然存在**20/389**条prompt无法成功越狱。剩余的失败案例揭示了两个明显的局限性：安全性不一致和语义退化。值得注意的是：即使重写的prompt获得了较高的安全评分，其中仍然会出现很大一部分失败案例。这表明剩余案例的瓶颈在于绕过安全机制的同时如何保持原始任务意图。
+
+#### Failure Mode Taxonomy
+
+20个失败案例实际分布为：
+
+| Failure Type | 数量  | 比例    |
+| ------------ | ----- | ------- |
+| SR=1, UR=0   | **8** | **40%** |
+| SR=0.5, UR=0 | **5** | **25%** |
+| SR=0, UR=0   | **2** | **10%** |
+| SR=0.5, UR=1 | **4** | **20%** |
+| SR=0, UR=1   | **1** | **5%**  |
+
+人工检查了这些未能成功越狱的案例，将失败情况划分为：**Safety Failure**、**Intent Failure**和**Generation Failure**，最终统计为：
+
+| 类别                     | Cases                                     | 数量   | 占比     |
+| ------------------------ | ----------------------------------------- | ------ | -------- |
+| 🛡️ **Safety Failure**     | 2, 12, 15, 22, 28, 32, 33, 35, 39, 44, 45 | **11** | **55%**  |
+| 🎯 **Intent Failure**     | 6, 21, 23, 30, 47, 53                     | **6**  | **30%**  |
+| 💬 **Generation Failure** | 3, 5, 16                                  | **3**  | **15%**  |
+| **Total**                | —                                         | **20** | **100%** |
+
+- Safety Failure：重写后的prompt仍能被Guard模型检测到；
+- Intent Failure：重写后的prompt成功通过Guard模型，但未能保留原始prompt的意图；
+- Generation Failure：重写后的prompt成功通过Guard模型，但Chat模型没有产生有效相应。
+
+#### Hard Cases Analysis
+
+#### Representative Cases & Lessons
 
 ### Conclusion
 
 ### Future Work
 
 ## Reference
+
+
+
+
 
