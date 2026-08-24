@@ -223,7 +223,7 @@ flowchart TD
     --> End([结束])
 ```
 
-##### 阶段1：RAG检索
+##### **阶段1：RAG检索**
 
 该阶段的作用并不是直接rewrite，而是利用Few-shot Learning**为后面的Rewrite提供参考案例**，增强攻击的隐蔽性。
 
@@ -289,7 +289,7 @@ flowchart TD
     Rewrite:
     ```
 
-##### 阶段2：多模型对抗生成
+##### **阶段2：多模型对抗生成**
 
 采用多模型对抗生成策略 （Ensemble Strategy）生成多个`rewritten prompt`候选，以最大化攻击多样性。
 
@@ -326,7 +326,7 @@ B1   B2   B3          S1
               Candidate Pool
 ```
 
-##### 阶段3：顺序评估
+##### **阶段3：顺序评估**
 
 将所有候选来源（RAG + 各模型的 Base/SFT 输出）合并、去重、过滤空值，然后按顺序执行三个子步骤：
 
@@ -371,7 +371,7 @@ Rewrite Candidate
  relevance_score
 ```
 
-##### 阶段4：最优候选选择
+##### **阶段4：最优候选选择**
 
 - **量化评分**：对每个候选`rewritten prompt`进行量化评分，`Safe=1.0`，`Controversial=0.5`，`Unsafe/Refusal/Unknown=0.0`。计算综合分：
   $$
@@ -626,7 +626,7 @@ $$
 
 **Safety Failure**表明：明确的有害行为很难隐藏；上下文混淆 ≠ 语义转换；hard case尤其难以套用通用模板。
 
-##### 🎯 Intent Failure
+##### 🎯 **Intent Failure**
 
 6/20（30%）的hard cases属于此类，为了通过安全检测，重写改变了太多原始意图。
 
@@ -642,7 +642,7 @@ $$
 
 **Intent Failure**表明：以安全为导向的重写可能会过度改变提示内容。
 
-##### 💬 Generation Failure
+##### 💬 **Generation Failure**
 
 此类只有3/20（15%），重写通过了安全检测，但仍被Chat模型拒绝。
 
