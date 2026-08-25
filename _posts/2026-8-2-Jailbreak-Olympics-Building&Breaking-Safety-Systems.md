@@ -675,8 +675,40 @@ $$
 
 ### Future Work
 
+**自适应模板选择**。我们的实验表明，重写策略的有效性很大程度上取决于输入提示的特征。未来的工作可以研究自适应模板选择，即通过一个轻量级的路由模型，根据每个提示的语义特征动态选择最合适的重写策略，而不是采用固定的转换方式。
 
+**意图保留重写。**失败案例分析进一步揭示了提示安全性和原始意图保留之间存在的根本权衡。未来的重写系统应明确优化语义对原始任务的保真度。在安全性和相关性评估的基础上，加入意图保真目标，兼顾安全性和原始意图。
+
+**防御型Hybrid RAG**。本实验使用Hybrid RAG来提升越狱生成能力，其核心原理也可应用于防御端。防御型Hybrid RAG可以检索先前观察到的越狱尝试、攻击模板和失败案例，以辅助安全评估。此类系统有助于发现隐藏的恶意意图，增强对未知越狱手段的鲁棒性，作为未来自适应LLM防御的发展方向。
 
 ## Reference
 
+[1] X. Qi, Z. Zhou, J. Zhu, J. Zhang, T. Liu, and B. Han, "DeepInception: Hypnotize large language model to be jailbreaker," *arXiv preprint arXiv:2311.03191*, 2023.
 
+[2] D. Yao, J. Zhang, I. G. Harris, and M. Carlsson, "FuzzLLM: A novel and universal fuzzing framework for proactively discovering jailbreak vulnerabilities in large language models," in *Proc. IEEE Int. Conf. Acoust., Speech Signal Process. (ICASSP)*, 2024, pp. 4485–4489.
+
+[3] P. Ding, J. Kuang, D. Ma, X. Cao, Y. Xian, J. Chen, and S. Huang, "A wolf in sheep's clothing: Generalized nested jailbreak prompts can fool large language models easily," *arXiv preprint arXiv:2311.08268*, 2023.
+
+[4] H. Lv, X. Wang, Y. Zhang, C. Huang, S. Dou, J. Ye, T. Gui, Q. Zhang, and X. Huang, "CodeChameleon: Personalized encryption framework for jailbreaking large language models," *arXiv preprint arXiv:2402.16717*, 2024.
+
+[5] B. Li, H. Xing, C. Tian, C. Huang, J. Qian, H. Xiao, and L. Feng, "StructuralSleight: Automated jailbreak attacks on large language models utilizing uncommon text-organization structures," *arXiv preprint arXiv:2406.08754*, 2024.
+
+[6] X. Li, R. Wang, M. Cheng, T. Zhou, and C.-J. Hsieh, "DrAttack: Prompt decomposition and reconstruction makes powerful LLM jailbreakers," *arXiv preprint arXiv:2402.16914*, 2024.
+
+[7] M. Russinovich, A. Salem, and R. Eldan, "Great, now write an article about that: The Crescendo multi-turn LLM jailbreak attack," in *Proc. 34th USENIX Security Symp. (USENIX Security 25)*, 2025, pp. 2421–2440.
+
+[8] Y. Zeng, H. Lin, J. Zhang, D. Yang, R. Jia, and W. Shi, "How Johnny can persuade LLMs to jailbreak them: Rethinking persuasion to challenge AI safety by humanizing LLMs," in *Proc. 62nd Annu. Meeting Assoc. Comput. Linguistics (ACL)*, 2024, pp. 14322–14350.
+
+[9] F. Yang, "Safe2Harm: Semantic isomorphism attacks for jailbreaking large language models," *arXiv preprint arXiv:2512.13703*, 2025.
+
+[10] Z. Weng, X. Jin, J. Jia, and X. Zhang, "Foot-in-the-door: A multi-turn jailbreak for LLMs," *arXiv preprint arXiv:2502.19820*, 2025.
+
+[11] Y. Huang, C. Liu, Y. Feng, C. Wu, F. Wu, and K. Kuang, "Rewrite to jailbreak: Discover learnable and transferable implicit harmfulness instruction," *arXiv preprint arXiv:2502.11084*, 2025.
+
+[12] M. Andriushchenko and N. Flammarion, "Does refusal training in LLMs generalize to the past tense?" in *Proc. 13th Int. Conf. Learn. Representations (ICLR)*, 2025.
+
+[13] S. Lee, S. Ni, C. Wei, S. Li, L. Fan, A. Argha, H. Alinejad-Rokny, R. Xu, Y. Gong, and M. Yang, "xJailbreak: Representation space guided reinforcement learning for interpretable LLM jailbreaking," *arXiv preprint arXiv:2501.16727*, 2025.
+
+[14] S. Tu, Z. Pan, W. Wang, Z. Zhang, Y. Sun, J. Yu, H. Wang, L. Hou, and J. Li, "Knowledge-to-jailbreak: One knowledge point worth one attack," in *Proc. 31st ACM SIGKDD Conf. Knowl. Discovery Data Mining (KDD)*, 2025, pp. 2847–2858.
+
+[15] Z. Chen, C. Li, C. Li, X. Xie, L. Zhang, and Y. Hei, "Jailbreaking LLMs & VLMs: Mechanisms, evaluation, and unified defenses," *arXiv preprint arXiv:2601.03594*, 2026.
