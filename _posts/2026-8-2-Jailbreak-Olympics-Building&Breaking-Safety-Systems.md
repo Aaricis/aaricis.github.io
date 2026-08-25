@@ -610,6 +610,10 @@ $$
 
 越狱失败可能发生在安全识别、意图保留以及下游响应生成环节。
 
+> [!important]
+>
+> hard cases分析表明：重写必须被限制在一定范围内，使恶意意图能够被充分转化以规避Guard模型，同时又要足够忠实于原始意图以保留下游响应的相关性。
+
 ##### 🛡️ **Safety Failure**
 
 **Safety Failure**是20个hard cases中数量最多的一类，共11/20（55%）。
@@ -659,17 +663,20 @@ $$
 
 **Generation Failure**表明：重写即使绕过安全检测，也有可能被Chat模型拒绝。
 
-#### Representative Cases & Lessons
-
-**hard cases分析表明：重写必须被限制在一定范围内，恶意意图被充分转化以规避Guard模型，同时又要足够忠实于原始任务以保留下游响应的相关性。**
-
 ### Conclusion
+
+**互补方法至关重要**。PAP和Safe2Harm分别在意图保留和安全规避方面具有互补优势，二者结合可显著提升整体性能。
+
+**Hybrid RAG通过良好的safety–relevance平衡获得最佳整体性能**。在所有方法中，Hybrid RAG获得了最高评分0.8440，同时保持了较高的Safety Score和最高的Relevance Score。相比之下，其他安全性更高的方法往往会牺牲相关性，而提高相关性的方法则可能降低安全性。Hybrid RAG在很大程度上避免了这种trade-off，表明基于检索的实例级自适应可以增强现有的重写机制，绕过安全防护和提升下游响应有用性。
+
+**安全绕过并不足够**。对20个失败案例的分析表明，通过Gaurd模型并不一定能够成功生成下游内容，失败源自**Safety Failure**、**Intent Failure**和**Generation Failure**。
+
+**LLM越狱是多目标任务**。有效的重写需要在绕过安全防护、保持原始意图和响应实用性之间取得平衡，因此需采用自适应而非静态的重写策略。
 
 ### Future Work
 
+
+
 ## Reference
-
-
-
 
 
