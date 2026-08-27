@@ -452,7 +452,7 @@ $$
 
 > [!important]
 >
-> 本项目从40种人类说服技巧中抽取**Top 5**有效的说服策略构造[persuasion_template](https://github.com/Aaricis/LLM-Jaibreak-Challenge/blob/main/src/persuasive/mutation_utils.py#L37)自动化模板，利用辅助LLM（deepseek-v4-flash、glm-4-flash-250414）作为“rewriter”，通过Few-Shot In-Context Learning将原始有害提示词按照特定修辞策略进行变异，同时强制保留原始恶意意图。
+> 本实验从40种人类说服技巧中抽取**Top 5**有效的说服策略构造[persuasion_template](https://github.com/Aaricis/LLM-Jaibreak-Challenge/blob/main/src/persuasive/mutation_utils.py#L37)自动化模板，利用辅助LLM（deepseek-v4-flash、glm-4-flash-250414）作为“rewriter”，通过Few-Shot In-Context Learning将原始有害提示词按照特定修辞策略进行变异，同时强制保留原始恶意意图。
 >
 > - 策略模板遵循统一的**五段式结构**：
 >
