@@ -307,35 +307,45 @@ flowchart TD
 
 RAG Hybrid框架提供Qwen、Llama、DeepSeek、gemma等系列模型共计15个。对于每个模型，会生成两类`rewritten prompt`候选。如下图所示，分别为Base模型生成的3个候选和使用LoRA Adapter生成的1个候选：
 
+```mermaid
+flowchart TD
+    OP[Original Prompt] --> BL[Base LLM]
+    OP --> LL[LoRA LLM]
+    BL --> B1[B1]
+    BL --> B2[B2]
+    BL --> B3[B3]
+    LL --> S1[S1]
 ```
-Original Prompt
-      │
-      ├───────────────┐
-      │               │
-      ▼               ▼
-   Base LLM        LoRA LLM
-      │               │
- ┌────┼────┐          │
- ▼    ▼    ▼          ▼
-B1   B2   B3          S1
-```
+
+
 
 再加上**阶段1**中RAG检索得到的Top 3 prompt，构成该原始prompt最终的`rewritten prompt`候选池：
 
-```
-                  Original Prompt
-                       │
-       ┌───────────────┼───────────────┐
-       │               │               │
-       ▼               ▼               ▼
-    RAG Top-3       Base Model       LoRA Model
-       │               │               │
-   R1 R2 R3         B1 B2 B3           S1
-       │               │               │
-       └───────────────┴───────────────┘
-                       │
-                       ▼
-              Candidate Pool
+```mermaid
+flowchart TD
+    OP[Original Prompt]
+    
+    OP --> RAG[RAG Top-3]
+    OP --> Base[Base Model]
+    OP --> LoRA[LoRA Model]
+    
+    RAG --> R1[R1]
+    RAG --> R2[R2]
+    RAG --> R3[R3]
+    
+    Base --> B1[B1]
+    Base --> B2[B2]
+    Base --> B3[B3]
+    
+    LoRA --> S1[S1]
+    
+    R1 --> CP[Candidate Pool]
+    R2 --> CP
+    R3 --> CP
+    B1 --> CP
+    B2 --> CP
+    B3 --> CP
+    S1 --> CP
 ```
 
 ##### **阶段3：顺序评估**
@@ -353,34 +363,14 @@ B1   B2   B3          S1
 
 整体流程：
 
-```
-Rewrite Candidate
-       │
-       ▼
-┌───────────────┐
-│ Guard Model   │
-│ Safety        │
-└───────┬───────┘
-        │
-        ▼
- Safety Label
-        │
-        ▼
-┌───────────────┐
-│ Chat Model    │
-└───────┬───────┘
-        │
-        ▼
-   Response × 3
-        │
-        ▼
-┌───────────────┐
-│ Usefulness    │
-│ Judge         │
-└───────┬───────┘
-        │
-        ▼
- relevance_score
+```mermaid
+flowchart TD
+    A[Rewrite Candidate] --> B[Guard Model<br/>Safety]
+    B --> C[Safety Label]
+    C --> D[Chat Model]
+    D --> E[Response × 3]
+    E --> F[Usefulness<br/>Judge]
+    F --> G[relevance_score]
 ```
 
 ##### **阶段4：最优候选选择**
