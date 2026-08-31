@@ -1,7 +1,7 @@
 ---
 title: Classical Chinese Instruction Tuning
 date: 2026-3-10 15:07:00 +/-8
-categories: [Instruction Tuning]
+categories: [Applied Deep Learning, Instruction Tuning]
 tags: [zero-shot, few-shot, in-context learning, lora, qlora, fine-tuning]     # TAG names should always be lowercase
 math: true
 ---

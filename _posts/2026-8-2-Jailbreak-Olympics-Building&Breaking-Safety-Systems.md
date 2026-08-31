@@ -1,7 +1,7 @@
 ---
 title: Jailbreak Olympics:Building & Breaking Safety Systems
 date: 2026-8-2 15:07:00 +/-8
-categories: [Jailbreak Attacks]
+categories: [Applied Deep Learning, Jailbreak Attacks]
 tags: [zero-shot, few-shot, in-context learning, lora, qlora, fine-tuning, jailbreak]     # TAG names should always be lowercase
 math: true
 mermaid: true

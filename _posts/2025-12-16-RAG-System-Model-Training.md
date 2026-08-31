@@ -1,8 +1,8 @@
 ---
 title: RAG System Model Training
 date: 2025-12-16 15:07:00 +/-8
-categories: [Retrieval-Augmented Generation]
-tags: [rag]     # TAG names should always be lowercase
+categories: [Applied Deep Learning, Retrieval-Augmented Generation]
+tags: [rag, retriver, reranker, sentencetransformer]     # TAG names should always be lowercase
 math: true
 ---
 ## Task
