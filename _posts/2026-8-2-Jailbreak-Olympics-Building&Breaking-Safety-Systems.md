@@ -140,19 +140,19 @@ LLM越狱攻击（Jailbreak Attack）方法可分为：
 
 ## Experimental Results
 
-| 排名 | 攻击类型                           | 方法                               | final\_acc | 相比Base提升 | weighted\_final\_acc | 相比Base提升（weighted） |
-| :--: | :--------------------------------- | :--------------------------------- | :--------: | :----------: | :------------------: | :----------------------: |
-|  ⭐🥇  | **Hybrid RAG** ⭐                   | **⭐ Hybrid RAG（本文原创）⭐**      | **0.8496** | **+916.9%**  |      **0.8440**      |       **+852.1%**        |
-|  🥈   | LLM Based Attack + Hybrid RAG      | PAP + Safe2Harm + Hybrid RAG       |   0.7314   |   +775.4%    |        0.7301        |         +723.6%          |
-|  🥉   | LLM Based Attack + RL Based Attack | PAP + Safe2Harm + xJailbreak       |   0.6941   |   +730.8%    |        0.6931        |         +681.9%          |
-|  4   | LLM Based Attack + Steganography   | PAP + Safe2Harm + Past tense       |   0.6889   |   +724.6%    |        0.6852        |         +673.0%          |
-|  5   | LLM Based Attack                   | PAP + Safe2Harm + Foot-In-The-Door |   0.6671   |   +698.5%    |        0.6636        |         +648.6%          |
-|  6   | LLM Based Attack                   | PAP + Safe2Harm                    |   0.6581   |   +687.7%    |        0.6594        |         +643.9%          |
-|  7   | LLM Based Attack                   | PAP (multiple attempts)            |   0.6414   |   +667.7%    |        0.6287        |         +609.2%          |
-|  8   | Fine-tuning                        | Fine-Tuning Only                   |   0.5681   |   +580.0%    |        0.5634        |         +535.6%          |
-|  9   | Template Attack                    | Multilayer obfuscation             |   0.5180   |   +520.0%    |        0.5109        |         +476.3%          |
-|  10  | Steganography                      | Past tense                         |   0.4897   |   +486.1%    |        0.4733        |         +433.9%          |
-|  —   | /                                  | Base (raw toxic prompts)           |   0.0835   |      —       |        0.0886        |            —             |
+| 排名 | 攻击类型                           | 方法                                                         | final\_acc | 相比Base提升 | weighted\_final\_acc | 相比Base提升（weighted） |
+| :--: | :--------------------------------- | :----------------------------------------------------------- | :--------: | :----------: | :------------------: | :----------------------: |
+|  ⭐🥇  | **Hybrid RAG** ⭐                   | **⭐ Hybrid RAG（本文原创）⭐**                                | **0.8496** | **+916.9%**  |      **0.8440**      |       **+852.1%**        |
+|  🥈   | LLM Based Attack + Hybrid RAG      | <span style="color: red;">PAP + Safe2Harm</span> + Hybrid RAG |   0.7314   |   +775.4%    |        0.7301        |         +723.6%          |
+|  🥉   | LLM Based Attack + RL Based Attack | <span style="color: red;">PAP + Safe2Harm</span> + xJailbreak |   0.6941   |   +730.8%    |        0.6931        |         +681.9%          |
+|  4   | LLM Based Attack + Steganography   | <span style="color: red;">PAP + Safe2Harm</span> + Past tense |   0.6889   |   +724.6%    |        0.6852        |         +673.0%          |
+|  5   | LLM Based Attack                   | <span style="color: red;">PAP + Safe2Harm</span> + Foot-In-The-Door |   0.6671   |   +698.5%    |        0.6636        |         +648.6%          |
+|  6   | LLM Based Attack                   | <span style="color: red;">PAP + Safe2Harm</span>             |   0.6581   |   +687.7%    |        0.6594        |         +643.9%          |
+|  7   | LLM Based Attack                   | PAP (multiple attempts)                                      |   0.6414   |   +667.7%    |        0.6287        |         +609.2%          |
+|  8   | Fine-tuning                        | Fine-Tuning Only                                             |   0.5681   |   +580.0%    |        0.5634        |         +535.6%          |
+|  9   | Template Attack                    | Multilayer obfuscation                                       |   0.5180   |   +520.0%    |        0.5109        |         +476.3%          |
+|  10  | Steganography                      | Past tense                                                   |   0.4897   |   +486.1%    |        0.4733        |         +433.9%          |
+|  —   | /                                  | Base (raw toxic prompts)                                     |   0.0835   |      —       |        0.0886        |            —             |
 
 上表展示了最终评分Top 10的攻击方法，完整实验数据参见：🔗 [final_results_sorted.xlsx](https://github.com/Aaricis/LLM-Jaibreak-Challenge/blob/main/results/final_results_sorted.xlsx)
 
