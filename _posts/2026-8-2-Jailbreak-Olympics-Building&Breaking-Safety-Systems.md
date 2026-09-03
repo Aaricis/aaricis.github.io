@@ -70,7 +70,7 @@ mermaid: true
 
 ## Source Code
 
-[LLM-Jaibreak-Challenge](https://github.com/Aaricis/LLM-Jaibreak-Challenge)
+[LLM-Jailbreak-Challenge](https://github.com/Aaricis/LLM-Jailbreak-Challenge)
 
 ## Attack Methods for LLMs
 
