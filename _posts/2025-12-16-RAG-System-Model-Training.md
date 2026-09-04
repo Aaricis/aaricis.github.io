@@ -180,11 +180,9 @@ Retriever Training Process (2.5%) and Reranker Training Process (2.5%). Both sho
 MNRL使用批次内的负样本（**in-batch negatives**），即批次中所有不匹配的样本对都被视为负样本。例如，在一批 (anchor, positive)对中，其他anchor的正样本充当当前anchor的负样本。这种方法计算效率很高，因为它避免了显式的负样本挖掘，同时每个批次都能提供大量的负样本。
 
 损失函数表示为：
-
-```mathematica
-L = -log( exp(sim(anchor, positive)) / Σ(exp(sim(anchor, negative_i))) )
-```
-
+$$
+\mathcal{L} = -\log \left( \frac{\exp(\operatorname{sim}(\text{anchor}, \text{positive}))}{\sum_{i} \exp(\operatorname{sim}(\text{anchor}, \text{negative}_i))} \right)
+$$
 $sim()$函数代表相似性度量（例如余弦相似度），分母包含了批次中所有负例。
 
 ##### Hyper-parameters
@@ -877,8 +875,10 @@ reward=tanh(quality−λ⋅cost−0.01⋅M)
 
 ## Reference
 
-- [Training and Finetuning Embedding Models with Sentence Transformers v3](https://huggingface.co/blog/train-sentence-transformers#training-and-finetuning-embedding-models-with-sentence-transformers-v3)
+[1] [Training and Finetuning Embedding Models with Sentence Transformers v3](https://huggingface.co/blog/train-sentence-transformers#training-and-finetuning-embedding-models-with-sentence-transformers-v3)
 
-- [Training and Finetuning Reranker Models with Sentence Transformers v4](https://huggingface.co/blog/train-reranker#training-and-finetuning-reranker-models-with-sentence-transformers-v4)
-- [sentence-transformers难负例挖掘：提升模型区分能力的技术-CSDN博客](https://blog.csdn.net/gitblog_00939/article/details/151858206)
-- [SentenceTransformers Documentation — Sentence Transformers documentation](https://www.sbert.net/index.html)
+[2] [Training and Finetuning Reranker Models with Sentence Transformers v4](https://huggingface.co/blog/train-reranker#training-and-finetuning-reranker-models-with-sentence-transformers-v4)
+
+[3] [sentence-transformers难负例挖掘：提升模型区分能力的技术-CSDN博客](https://blog.csdn.net/gitblog_00939/article/details/151858206)
+
+[4] [SentenceTransformers Documentation — Sentence Transformers documentation](https://www.sbert.net/index.html)
