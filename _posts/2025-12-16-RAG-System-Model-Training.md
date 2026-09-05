@@ -875,10 +875,10 @@ reward=tanh(quality−λ⋅cost−0.01⋅M)
 
 ## Reference
 
-[1] [Training and Finetuning Embedding Models with Sentence Transformers v3](https://huggingface.co/blog/train-sentence-transformers#training-and-finetuning-embedding-models-with-sentence-transformers-v3)
+[1] Training and Finetuning Embedding Models with Sentence Transformers[EB/OL]. Hugging Face Blog. https://huggingface.co/blog/train-sentence-transformers.
 
-[2] [Training and Finetuning Reranker Models with Sentence Transformers v4](https://huggingface.co/blog/train-reranker#training-and-finetuning-reranker-models-with-sentence-transformers-v4)
+[2] Training and Finetuning Reranker Models with Sentence Transformers[EB/OL]. Hugging Face Blog. https://huggingface.co/blog/train-reranker.
 
-[3] [sentence-transformers难负例挖掘：提升模型区分能力的技术-CSDN博客](https://blog.csdn.net/gitblog_00939/article/details/151858206)
+[3] sentence-transformers难负例挖掘：提升模型区分能力的技术[EB/OL]. CSDN博客. https://blog.csdn.net/gitblog_00939/article/details/151858206.
 
-[4] [SentenceTransformers Documentation — Sentence Transformers documentation](https://www.sbert.net/index.html)
+[4] SentenceTransformers Documentation[EB/OL]. https://www.sbert.net/index.html.
