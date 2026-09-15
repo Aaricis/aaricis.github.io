@@ -180,9 +180,13 @@ Retriever Training Process (2.5%) and Reranker Training Process (2.5%). Both sho
 MNRL使用批次内的负样本（**in-batch negatives**），即批次中所有不匹配的样本对都被视为负样本。例如，在一批 (anchor, positive)对中，其他anchor的正样本充当当前anchor的负样本。这种方法计算效率很高，因为它避免了显式的负样本挖掘，同时每个批次都能提供大量的负样本。
 
 损失函数表示为：
+
+
 $$
 \mathcal{L} = -\log \left( \frac{\exp(\operatorname{sim}(\text{anchor}, \text{positive}))}{\sum_{i} \exp(\operatorname{sim}(\text{anchor}, \text{negative}_i))} \right)
 $$
+
+
 $sim()$函数代表相似性度量（例如余弦相似度），分母包含了批次中所有负例。
 
 ##### Hyper-parameters
@@ -770,9 +774,11 @@ Top_M 的真实目标是：
 maximize: AnswerQuality − λ · ContextCost
 ```
 
-```math
+
+$$
 reward=Quality(pred,gold)−λ⋅TokenCost(context)
-```
+$$
+
 
 | 模块      | 作用               |
 | --------- | ------------------ |
@@ -781,9 +787,11 @@ reward=Quality(pred,gold)−λ⋅TokenCost(context)
 | Cost      | token cost penalty |
 | Normalize | bounded for PPO    |
 
-```mathematica
-reward = w1 * cosine + w2 * rouge_l - λ * token_cost
-```
+
+$$
+reward = w_1 * cosine + w_2 * rouge\_l - \lambda * token_cost
+$$
+
 
 #### Additional Analysis
 
