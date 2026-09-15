@@ -801,7 +801,7 @@ PPO policy训练loss如图：
 
 分析Ground Truth，83.5%的query都只对应一个passage，即`top_m=1`。
 
-```mathematica
+```
 平均每个 query 有 1.18 个相关文档
 最少: 1, 最多: 4
 
@@ -814,9 +814,11 @@ PPO policy训练loss如图：
 
 使用PPO模型预测top_m，对所有query预测的top_m都是1。这种行为在统计上是合理的，并不是PPO collapse。reward结构在数学上强烈偏向`top_m=1`，PPO学成常数1是”正确优化结果“，不是bug。
 
-```math
+
+$$
 reward=tanh(quality−λ⋅cost−0.01⋅M)
-```
+$$
+
 
 其中：
 
