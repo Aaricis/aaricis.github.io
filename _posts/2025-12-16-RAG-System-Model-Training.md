@@ -245,7 +245,7 @@ training_args = SentenceTransformerTrainingArguments(
 
 1. 数据来源
 
-   - 训练数据：`./data/train.txt`, ` ./data/qrels.txt` ,  `./vector_database`, `passage_index.faiss`, `passage_store.db`
+   - 训练数据：`./data/train.txt`、` ./data/qrels.txt`、  `./vector_database`、`passage_index.faiss `、`passage_store.db`
    - 测试数据：`./data/test_open.txt`、`./data/qrels.txt`、`./data/corpus.txt`
 
 2. 采样策略
