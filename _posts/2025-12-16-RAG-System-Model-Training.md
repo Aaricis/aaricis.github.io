@@ -582,7 +582,7 @@ PS：第0行为base model的测试结果。
 - 第5-6行，分别使用手动挖掘和[sentence transformers mine_hard_negatives接口](https://www.sbert.net/docs/package_reference/util.html#sentence_transformers.util.mine_hard_negatives)获取hard negative数据，模型测试效果均显著提升，且区别不大。这里推荐使用sentence transformers mine_hard_negatives接口，胜在方便。
 - 对比第2、5、6行，使用BCELoss或是LambdaLoss对训练的影响不是很大。
 
-### Q4：RL in the loop(2%)
+### Q4: RL in the loop(2%)
 
 Use **Reinforcement Learning** to train a model deciding the number of passages to include in the prompt.
 
