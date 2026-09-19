@@ -392,7 +392,7 @@ training_args = CrossEncoderTrainingArguments(
   - **Basic**：直接告诉模型根据检索到的上下文回答问题；
   - **CoT**：System Prompt让模型按步骤思考，但只输出Final Answer；User Prompt结构化context，对context进行编号输出；
   - **RAG-Aware No-COT**：明确禁止使用外部知识、强调context是唯一信息源、强调grounded answer；不使用CoT，防止模型推理出context之外的东西；
-  - **Basic + 约束**：在Basic Prompt基础上，要求模型回答“准确、简介”。
+  - **Basic + 约束**：在Basic Prompt基础上，要求模型回答“准确、简洁”。
   
 - **Present at least three different prompts you experimented with, along with their inference performance, to demonstrate the effectiveness of your optimization approach. (1.5%)**
 
