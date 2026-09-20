@@ -789,7 +789,7 @@ $$
 
 
 $$
-reward = w_1 * cosine + w_2 * rouge\_l - \lambda * token_cost
+reward = w_1 * cosine + w_2 * rouge\_l - \lambda * token\_cost
 $$
 
 
